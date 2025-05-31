@@ -20,10 +20,13 @@ require('./config/passport');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const categoryRoutes = require('./routes/category');
+const adminRoutes = require('./routes/admin');
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/category', categoryRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Connect to MongoDB
 const PORT = process.env.PORT || 5000;

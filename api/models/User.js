@@ -104,7 +104,13 @@ const userSchema = new mongoose.Schema({
     },
     accessToken: String,
     refreshToken: String
-  }]
+  }],
+  lastActive: {
+    type: Date,
+    default: function() {
+      return this.createdAt;
+    }
+  },
 }, {
   timestamps: true
 });

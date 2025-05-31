@@ -6,10 +6,10 @@ const Category = require('../models/Category');
 // Create category (Admin only)
 router.post('/', authenticateJWT, isAdmin, async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name , parent } = req.body;
     const slug = name.toLowerCase().replace(/\s+/g, '-');
 
-    const category = await Category.create({ name, slug });
+    const category = await Category.create({ name, slug, parent });
     res.status(201).json(category);
   } catch (error) {
     if (error.code === 11000) {
@@ -28,6 +28,19 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: 'Error fetching categories', error: error.message });
   }
 });
+
+// Get categories with populated parent 
+router.get('/parent', async (req, res) => {
+  try {
+    const categories = await Category.find().populate('parent').sort({ name: 1 });
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching categories with parent', error: error.message });
+  }
+});
+
+
+
 
 // Update category (Admin only)
 router.put('/:id', authenticateJWT, isAdmin, async (req, res) => {

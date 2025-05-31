@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import Demotree from './Demotree';
 
 function Admin() {
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
+  const [parentCategory, setParentCategory] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [error, setError] = useState('');
   const token = localStorage.getItem('token');
@@ -15,9 +17,9 @@ function Admin() {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/category');
+      const response = await axios.get('http://localhost:5000/api/category/parent');
       setCategories(response.data);
-      console.log('Categories fetched:', response.data);
+      console.log('Categories fetched:', response.data);  
     } catch (error) {
       setError('Failed to fetch categories');
     }
@@ -25,8 +27,11 @@ function Admin() {
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     try {
+      console.log('Creating category:', newCategory, 'Parent:', parentCategory);
       await axios.post('http://localhost:5000/api/category', 
-        { name: newCategory },
+        { name: newCategory ,
+          parent: parentCategory
+        },
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -34,8 +39,8 @@ function Admin() {
           }
         });
       setNewCategory('');
+      setParentCategory('');
       fetchCategories();
-      console.log('Category created:', newCategory);
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to create category');
     }
@@ -91,6 +96,16 @@ function Admin() {
             className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
+          <label className="text-white">Parent Category: {parentCategory}</label>
+          <select value={parentCategory} onChange={(e) => { const selected = e.target.value; setParentCategory(selected === "null" ? null : selected); }} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="null" className='text-gray-800'>Top Parent</option> 
+            {categories.filter((category) => category.parent === null)
+            .map((category) => (
+              <option key={category._id} value={category._id} className='text-gray-800'>
+                {category.name}
+              </option>
+            ))}
+          </select>
           <button
             type="submit"
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -106,7 +121,11 @@ function Admin() {
           {error}
         </div>
       )}
-
+      {/* Category Tree */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-white">Category Tree</h2>
+        <Demotree />
+      </div>
       {/* Categories List */}
       <div className="bg-gray-800 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold p-6 border-b">Categories</h2>
@@ -137,6 +156,10 @@ function Admin() {
               ) : (
                 <>
                   <span className="text-lg">{category.name}</span>
+                  <span className="text-sm text-gray-400">{category.slug}</span>
+                  <span className="text-sm text-gray-400">{category.parent ? category.parent.name : "Top Parent"}</span>
+
+                  {/* Action Buttons */}
                   <div className="flex gap-2">
                     <button
                       onClick={() => setEditingCategory({ id: category._id, name: category.name })}

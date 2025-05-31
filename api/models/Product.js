@@ -16,6 +16,15 @@ const productSchema = new mongoose.Schema({
       ref: "Category", // เชื่อมโยงกับโมเดล Category
       required: true,
     },
+    rarity: {
+      type: String,
+      enum: ["ทั่วไป", "หายาก", "พิเศษ", "ลิมิเต็ด"],
+      default: "ทั่วไป",
+    },
+    tags: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tag" // เชื่อมโยงกับโมเดล Tag
+    }],
     price: {
       type: Number,
       required: true,
@@ -23,15 +32,13 @@ const productSchema = new mongoose.Schema({
     },
     images: {
       type: [String], // เก็บ URL รูปภาพ (หลายรูป)
+      validate: v=> Array.isArray(v) && v.length > 0, // ต้องมีอย่างน้อย 1 รูป
       required: true,
     },
     condition: {
       type: String,
       enum: ["มือ 1", "มือ 2"],
       default: "มือ 2",
-    },
-    tags: {
-      type: [String], // เช่น ["rare", "limited edition"]
     },
     isSold: {
       type: Boolean,

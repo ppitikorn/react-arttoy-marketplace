@@ -14,7 +14,12 @@ const categorySchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
-    }
+    },
+    parent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category", // เชื่อมโยงกับโมเดล Category
+      default: null, // หมายถึงไม่มีหมวดหมู่หลัก
+    },
   },
   {
     timestamps: true,

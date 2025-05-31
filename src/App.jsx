@@ -11,7 +11,10 @@ import ChatPage from './pages/chat/ChatPage';
 import PostProduct from './pages/marketplace/PostProduct';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import OAuthCallback from './pages/auth/OAuthCallback';
-import Admin from './pages/Admin';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminProducts from './pages/admin/AdminProduct';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminLayout from './components/layout/AdminLayout';
 
 import './App.css';
 
@@ -51,14 +54,11 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route
-                path="/admin" 
-                element={
-                  <ProtectedRoute>
-                    <Admin />
-                  </ProtectedRoute>
-                } 
-                />
+              <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminLayout /></ProtectedRoute>}>
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="products" element={<AdminProducts />} />
+              </Route>
             </Routes>
           </Layout>
         </ChatProvider>

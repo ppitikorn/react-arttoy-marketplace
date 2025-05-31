@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { generateToken } = require('../config/jwt');
 const User = require('../models/User');
-const { authenticateGoogle } = require('../middleware/auth');
+const { authenticateGoogle , authenticateJWT } = require('../middleware/auth');
 const passport = require('passport');
 
 // Register new user
@@ -77,6 +77,10 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+    // Update last active timestamp
+    user.lastActive = new Date();
+    await user.save();
+
     // Generate JWT token
     const token = generateToken(user);    res.json({
       token,
@@ -101,13 +105,16 @@ router.get('/google/callback',
   passport.authenticate('google', { session: false }),
   (req, res) => {
     const token = generateToken(req.user);
+    // Update last active timestamp
+    req.user.lastActive = new Date();
+    req.user.save();
     // Redirect to frontend with token
     res.redirect(`${process.env.FRONTEND_URL}/oauth/callback?token=${token}`);
   }
 );
 
 // Get current user
-router.get('/me', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/me', authenticateJWT, (req, res) => {
   res.json({
     user: {
       id: req.user._id,
