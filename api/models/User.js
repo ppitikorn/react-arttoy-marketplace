@@ -54,31 +54,16 @@ const userSchema = new mongoose.Schema({
       enum: ['active', 'inactive', 'banned', 'suspended'],
       default: 'active'
     },
-    isBanned:{
-      type: Boolean,
-      default: false
-    },
-    banReason: {
+    reason: {
       type: String,
-      default: ''
+      default: '',
+      maxLength: 200
     },
-    bannedDate: {
+    lastUpdated: {
       type: Date,
-      default: null
-    },
-    isSuspended: {
-      type: Boolean,
-      default: false
-    },
-    suspendedReason: {
-      type: String,
-      default: ''
-    },
-    suspendedAt: {
-      type: Date,
-      default: null
+      default: Date.now
     }
-},
+  },
   interests: [{
     type: String,
     trim: true
