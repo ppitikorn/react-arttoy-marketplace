@@ -90,12 +90,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const response = await axios.get('http://localhost:5000/api/profile')
         const profileData = response.data;
         console.log('Profile data fetched:', profileData);
         

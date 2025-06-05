@@ -15,10 +15,15 @@ const AdminLayout = () => {
             <FaUsers className="text-lg" /> 
             <span>User Management</span>
           </Link>
-          <Link to="/admin/categories" 
+          <Link to="/admin/brands" 
             className="flex items-center gap-3 px-3 py-3 text-white no-underline rounded-lg hover:bg-slate-700 transition-colors">
             <FaList className="text-lg" /> 
-            <span>Categories Management</span>
+            <span>Brands Management</span>
+          </Link>
+          <Link to="/admin/tags" 
+            className="flex items-center gap-3 px-3 py-3 text-white no-underline rounded-lg hover:bg-slate-700 transition-colors">
+            <FaList className="text-lg" /> 
+            <span>Tags Management</span>
           </Link>
           <Link to="/admin/products" 
             className="flex items-center gap-3 px-3 py-3 text-white no-underline rounded-lg hover:bg-slate-700 transition-colors">

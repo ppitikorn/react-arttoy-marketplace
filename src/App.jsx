@@ -11,13 +11,13 @@ import ChatPage from './pages/chat/ChatPage';
 import PostProduct from './pages/marketplace/PostProduct';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import OAuthCallback from './pages/auth/OAuthCallback';
-import AdminCategories from './pages/admin/AdminCategories';
+import AdminBrands from './pages/admin/AdminBrands';
 import AdminProducts from './pages/admin/AdminProduct';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminLayout from './components/layout/AdminLayout';
+import AdminTags from './pages/admin/AdminTags';
 
 import './App.css';
-
 function App() {
   return (
     <Router>
@@ -54,10 +54,12 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+
               <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminLayout /></ProtectedRoute>}>
                 <Route path="users" element={<AdminUsers />} />
-                <Route path="categories" element={<AdminCategories />} />
+                <Route path="brands" element={<AdminBrands />} />
                 <Route path="products" element={<AdminProducts />} />
+                <Route path="tags" element={<AdminTags />} />
               </Route>
             </Routes>
           </Layout>

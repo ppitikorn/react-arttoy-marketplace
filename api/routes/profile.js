@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT } = require('../middleware/auth');
 const User = require('../models/User');
-const upload = require('../middleware/uploadMiddleware'); // Import the upload middleware
+const {uploadProfile} = require('../middleware/uploadMiddleware'); // Import the upload middleware
 const { cloudinary } = require('../config/cloudinaryConfig');
 // Get user profile
 router.get('/', authenticateJWT, async (req, res) => {
@@ -15,7 +15,7 @@ router.get('/', authenticateJWT, async (req, res) => {
 });
 
 // Update user profile
-router.put('/', authenticateJWT, upload.single('avatarFile'), async (req, res) => {
+router.put('/', authenticateJWT, uploadProfile.single('avatarFile'), async (req, res) => {
   try {
     const { name, email, bio, phoneNumber } = req.body;
     const currentUser = await User.findById(req.user._id);
@@ -49,7 +49,8 @@ router.put('/', authenticateJWT, upload.single('avatarFile'), async (req, res) =
         console.error('Error deleting old avatar:', error);
         // Continue with update even if deletion fails
       }
-    }    const updatedUser = await User.findByIdAndUpdate(
+    }    
+    const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       {
         $set: {

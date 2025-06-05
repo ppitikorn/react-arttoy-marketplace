@@ -76,13 +76,34 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
+    if( user.status.state === 'banned') {
+      const reason = user.status.reason || 'No reason provided';
+      return res.status(403).json({ message: `Your account is banned: ${reason}` });
+    }
+    if( user.status.state === 'suspended') {
+      const reason = user.status.reason || 'No reason provided';
+      const now = new Date();
+      const suspendedAt = new Date(user.status.lastUpdated);
+      const suspensionDuration = 1 * 24 * 60 * 60 * 1000; // 1 day in milliseconds
+      if (now - suspendedAt < suspensionDuration) {
+        const timeLeft = Math.ceil((suspendedAt.getTime() + suspensionDuration - now.getTime()) / (1000 * 60 * 60 * 24));
+        return res.status(403).json({ message: `Your account is suspended: ${reason}. Time left: ${timeLeft} days` });
+      }else {
+        // Automatically reactivate account after suspension period
+      user.status.state = 'active';
+      user.status.reason = '';
+      user.status.lastUpdated = new Date();
+      await user.save();
+    }
+    }
 
     // Update last active timestamp
     user.lastActive = new Date();
     await user.save();
 
     // Generate JWT token
-    const token = generateToken(user);    res.json({
+    const token = generateToken(user);    
+    res.json({
       token,
       user: {
         id: user._id,

@@ -19,14 +19,19 @@ require('./config/passport');
 // Routes
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
-const categoryRoutes = require('./routes/category');
 const adminRoutes = require('./routes/admin');
+const tagRoutes = require('./routes/tags');
+const brandRoutes = require('./routes/brand');
+const productRoutes = require('./routes/product');
+const { authenticateJWT, isAdmin } = require('./middleware/auth');
 
 
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/api/category', categoryRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/tags', tagRoutes);
+app.use('/api/brand', brandRoutes);
+app.use('/api/products', productRoutes);
 
 // Connect to MongoDB
 const PORT = process.env.PORT || 5000;

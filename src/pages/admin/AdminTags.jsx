@@ -1,0 +1,129 @@
+//CRUD Tags for products by admin only
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Table, Button, Input, Modal, message } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useAuth } from '../../context/AuthContext';
+
+function AdminTags() {
+    const [tags, setTags] = useState([]);
+    const [newTag, setNewTag] = useState('');
+    const [editingTag, setEditingTag] = useState(null);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [error, setError] = useState('');
+    const { user } = useAuth();
+    const token = localStorage.getItem('token');
+    
+    useEffect(() => {
+        fetchTags();
+    }, []);
+    
+    const fetchTags = async () => {
+        try {
+        const response = await axios.get('http://localhost:5000/api/admin/tags', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log(response.data);
+        setTags(response.data);
+        } catch (error) {
+        setError('Failed to fetch tags');
+        }
+    };
+    
+    const handleCreateOrUpdateTag = async () => {
+        try {
+        if (editingTag) {
+            await axios.put(`http://localhost:5000/api/admin/tags/${editingTag._id}`, { name: newTag }, {
+            headers: { Authorization: `Bearer ${token}` }
+            });
+            message.success('Tag updated successfully');
+        } else {
+            await axios.post('http://localhost:5000/api/admin/tags', { name: newTag }, {
+            headers: { Authorization: `Bearer ${token}` }
+            });
+            message.success('Tag created successfully');
+        }
+        setNewTag('');
+        setEditingTag(null);
+        setIsModalVisible(false);
+        fetchTags();
+        } catch (error) {
+        message.error(error.response?.data?.message || 'Failed to save tag');
+        }
+    };
+    
+    const handleDeleteTag = async (id) => {
+        try {
+        await axios.delete(`http://localhost:5000/api/admin/tags/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        message.success('Tag deleted successfully');
+        fetchTags();
+        } catch (error) {
+        message.error(error.response?.data?.message || 'Failed to delete tag');
+        }
+    };
+    
+    const columns = [
+        { title: 'Name', dataIndex: 'name', key: 'name' },
+        {
+        title: 'Actions',
+        key: 'actions',
+        render: (text, record) => (
+            <span>
+            <Button
+                icon={<EditOutlined />}
+                onClick={() => {
+                setEditingTag(record);
+                setNewTag(record.name);
+                setIsModalVisible(true);
+                }}
+            />  
+            <Button
+                icon={<DeleteOutlined />}
+                danger
+                onClick={() => handleDeleteTag(record._id)}
+                style={{ marginLeft: 8 }}
+            />  
+            </span>
+        )
+    }
+    ];  
+    return (
+        <div>
+            <h2>Admin Tags Management</h2>
+            <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                    setEditingTag(null);
+                    setNewTag('');
+                    setIsModalVisible(true);
+                }}
+                style={{ marginBottom: 16 }}
+            >
+                Add New Tag
+            </Button>
+            <Table
+                dataSource={tags}
+                columns={columns}
+                rowKey="_id"
+                pagination={{ pageSize: 10 }}
+            />
+            <Modal
+                title={editingTag ? 'Edit Tag' : 'Create New Tag'}
+                open={isModalVisible}
+                onOk={handleCreateOrUpdateTag}
+                onCancel={() => setIsModalVisible(false)}
+            >
+                <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    placeholder="Enter tag name"
+                />
+            </Modal>
+        </div>
+    );  
+}
+
+export default AdminTags;

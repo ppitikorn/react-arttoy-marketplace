@@ -1,155 +1,135 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const ProductList = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
-    category: 'all',
-    priceRange: 'all',
-    sortBy: 'newest'
+    category: '',
+    brand: '',
+    rarity: '',
+    tags: []
   });
 
-  // Mock data - replace with actual API call
-  const products = [
-    {
-      id: 1,
-      name: "Designer Art Toy #1",
-      artist: "John Artist",
-      price: 299.99,
-      image: "https://source.unsplash.com/random/400x400/?toy,art",
-      category: "designer"
-    },
-    {
-      id: 2,
-      name: "Limited Edition Figure",
-      artist: "Sarah Creator",
-      price: 199.99,
-      image: "https://source.unsplash.com/random/400x400/?figure,art",
-      category: "limited"
-    },
-    // Add more mock products...
-  ];
+  const categories = ["Figure", "Action Figure", "Blind Box", "Plush Toys", "Art Work", "OTHER"];
+  const rarityOptions = ["Common", "Secret", "Limited"];
 
-  const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'designer', label: 'Designer Toys' },
-    { value: 'limited', label: 'Limited Edition' },
-    { value: 'custom', label: 'Custom Made' }
-  ];
+  useEffect(() => {
+    fetchProducts();
+  }, [filters]);
 
-  const priceRanges = [
-    { value: 'all', label: 'All Prices' },
-    { value: 'under100', label: 'Under $100' },
-    { value: '100-300', label: '$100 - $300' },
-    { value: 'over300', label: 'Over $300' }
-  ];
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams();
+      if (filters.category) queryParams.append('category', filters.category);
+      if (filters.brand) queryParams.append('brand', filters.brand);
+      if (filters.tags.length > 0) queryParams.append('tags', filters.tags.join(','));
 
-  const sortOptions = [
-    { value: 'newest', label: 'Newest First' },
-    { value: 'price-low', label: 'Price: Low to High' },
-    { value: 'price-high', label: 'Price: High to Low' },
-    { value: 'popular', label: 'Most Popular' }
-  ];
+      const response = await axios.get(`http://localhost:5000/api/products?${queryParams}`);
+      setProducts(response.data);
+      console.log('Fetched products:', response.data);
+      console.log('Filters applied:', filters);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }));
+  const filteredProducts = products.filter(product =>
+    product.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Search and Filters Section */}
-        <div className="mb-8 space-y-4">
-          {/* Search Bar */}
-          <div className="flex-1">
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg py-2 px-4 pl-10 focus:outline-none focus:border-blue-500"
-                placeholder="Search for art toys..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4">
-            <select
-              className="bg-gray-800 text-white border border-gray-700 rounded-lg py-2 px-4 focus:outline-none focus:border-blue-500"
-              value={filters.category}
-              onChange={(e) => handleFilterChange('category', e.target.value)}
-            >
-              {categories.map(category => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="bg-gray-800 text-white border border-gray-700 rounded-lg py-2 px-4 focus:outline-none focus:border-blue-500"
-              value={filters.priceRange}
-              onChange={(e) => handleFilterChange('priceRange', e.target.value)}
-            >
-              {priceRanges.map(range => (
-                <option key={range.value} value={range.value}>
-                  {range.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="bg-gray-800 text-white border border-gray-700 rounded-lg py-2 px-4 focus:outline-none focus:border-blue-500"
-              value={filters.sortBy}
-              onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-            >
-              {sortOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+    <div className="min-h-screen bg-[#f0f2f5] p-6 text-gray-800">
+      {/* Search and Filters Section */}
+      <div className="text-center mb-6 border-b border-gray-200 pb-4 bg-white shadow-sm rounded-lg">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold">Product List</h2>
+        </div>
+      <div className="max-w-7xl mx-auto mb-8 space-y-4">
+        <div className="flex gap-4 items-center">
+          <input
+            type="text"
+            placeholder="Search products..."
+            className="flex-1 p-2 rounded-lg border border-gray-300 focus:outline-none focus:border-[#FF4C4C]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <Link
-              key={product.id}
-              to={`/marketplace/${product.id}`}
-              className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1"
+        {/* Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <select
+            className="p-2 rounded-lg border border-gray-300 focus:outline-none focus:border-[#FF4C4C]"
+            value={filters.category}
+            onChange={(e) => handleFilterChange('category', e.target.value)}
+          >
+            <option value="">All Categories</option>
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+
+          <select
+            className="p-2 rounded-lg border border-gray-300 focus:outline-none focus:border-[#FF4C4C]"
+            value={filters.rarity}
+            onChange={(e) => handleFilterChange('rarity', e.target.value)}
+          >
+            <option value="">All Rarities</option>
+            {rarityOptions.map(rarity => (
+              <option key={rarity} value={rarity}>{rarity}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Products Grid */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF4C4C] border-t-transparent"></div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {filteredProducts.map(product => (
+            <div
+              key={product._id}
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
             >
-              <div className="relative aspect-square">
+              <div className="aspect-w-1 aspect-h-1">
                 <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
+                  src={product.images[0]}
+                  alt={product.title}
+                  className="w-full h-48 object-cover"
                 />
               </div>
               <div className="p-4">
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  {product.name}
-                </h3>
-                <p className="text-gray-400 text-sm mb-2">
-                  by {product.artist}
-                </p>
-                <p className="text-blue-400 font-bold">
-                  ${product.price.toFixed(2)}
-                </p>
+                <h3 className="text-lg font-semibold mb-2 truncate">{product.title}</h3>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[#FF4C4C] font-bold">฿{product.price.toLocaleString()}</span>
+                  <span className="text-sm text-gray-500">{product.condition}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">{product.category}</span>
+                  <span className={`text-sm px-2 py-1 rounded ${
+                    product.rarity === 'Limited' ? 'bg-red-100 text-red-600' :
+                    product.rarity === 'Secret' ? 'bg-purple-100 text-purple-600' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {product.rarity}
+                  </span>
+                </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
+      )}
       </div>
     </div>
   );

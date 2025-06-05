@@ -13,6 +13,7 @@ const AdminUsers = () => {
     username: '',
     email: '',
     password: '',
+    role: '',
     status: {
       state: '',
       reason: '',
@@ -42,6 +43,7 @@ const AdminUsers = () => {
         await axios.put(`http://localhost:5000/api/admin/users/${selectedUser._id}`, formData);
       } else {
         // Create new user
+        console.log("formData", formData);
         await axios.post('http://localhost:5000/api/admin/users', formData);
       }
       fetchUsers();
@@ -51,7 +53,8 @@ const AdminUsers = () => {
         name: '', 
         username: '', 
         email: '', 
-        password: '', 
+        password: '',
+        role: '', 
         status: {
           state: '',
           reason: '',
@@ -69,12 +72,12 @@ const AdminUsers = () => {
       name: user.name,
       username: user.username,
       email: user.email,
+      role: user.role,
       status: {
           state: user.status.state,
           reason: user.status.reason,
           lastUpdated: user.status.lastUpdated
         },
-      password: '' // Don't populate password on edit
     });
     setIsModalOpen(true);
   };
@@ -99,6 +102,17 @@ const AdminUsers = () => {
   // Change page
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
+  };
+
+  const statusColorMap = {
+        active: 'bg-green-100 text-green-800',
+        inactive: 'bg-gray-100 text-gray-800',
+        banned: 'bg-red-100 text-red-800',
+        suspended: 'bg-yellow-100 text-yellow-800',
+      };
+  const roleColorMap = {
+        user: 'bg-gray-300 text-gray-800',
+        admin: 'bg-blue-100 text-blue-800',
   };
 
   return (
@@ -147,7 +161,13 @@ const AdminUsers = () => {
                 name: '', 
                 username: '', 
                 email: '', 
-                password: ''
+                password: '',
+                role: '',
+                status: {
+                  state: 'active',
+                  reason: '',
+                  lastUpdated: null,
+                }
               });
               console.log("formData", formData);
               setIsModalOpen(true);
@@ -166,9 +186,11 @@ const AdminUsers = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Added</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -179,7 +201,7 @@ const AdminUsers = () => {
                     <div className="h-10 w-10 flex-shrink-0">
                       <img
                         className="h-10 w-10 rounded-full"
-                        src={user.avatar || 'https://via.placeholder.com/40'}
+                        src={user.avatar}
                         alt={user.name}
                       />
                     </div>
@@ -191,9 +213,13 @@ const AdminUsers = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    ${user.status.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColorMap[user.status.state]}`}>
                     {user.status.state}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleColorMap[user.role]}`}>
+                    {user.role}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -208,7 +234,7 @@ const AdminUsers = () => {
                     timeStyle: "short",
                     })} 
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   <button
                     onClick={() => handleEdit(user)}
                     className="text-blue-600 hover:text-blue-900 mr-4"
@@ -325,6 +351,7 @@ const AdminUsers = () => {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
+                    placeholder='Enter name'
                   />
                 </div>
                 <div className="mb-4">
@@ -335,6 +362,7 @@ const AdminUsers = () => {
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
+                    placeholder='Enter username'
                   />
                 </div>
                 <div className="mb-4">
@@ -345,6 +373,7 @@ const AdminUsers = () => {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
+                    placeholder='Enter email'
                   />
                 </div>
                 {!selectedUser && (
@@ -356,9 +385,29 @@ const AdminUsers = () => {
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                       required={!selectedUser}
+                      placeholder='Enter password atleast 6 characters'
+                      minLength={6} // Minimum length for password
+                      //atleast 6 characters
+                      pattern=".{6,}"
+
+
                     />
                   </div>
                 )}
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2">Role</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required
+                    
+                  >
+                    <option value="">Select Role</option>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
                 <div className="mb-4">
                   <label className="block text-gray-700 text-sm font-bold mb-2">Status</label>
                   <select
@@ -379,6 +428,7 @@ const AdminUsers = () => {
                         value={formData.status.reason}
                         onChange={(e) => setFormData({ ...formData, status: { ...formData.status, reason: e.target.value, lastUpdated: new Date() } })}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="Enter ban reason"
                       />
                     </div>
                   )}
@@ -390,6 +440,7 @@ const AdminUsers = () => {
                         value={formData.status.reason}
                         onChange={(e) => setFormData({ ...formData, status: { ...formData.status, reason: e.target.value, lastUpdated: new Date() } })}
                         className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        placeholder="Enter suspension reason"
                       />
                     </div>
                   )}
@@ -419,3 +470,4 @@ const AdminUsers = () => {
 };
 
 export default AdminUsers;
+

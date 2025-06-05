@@ -1,7 +1,7 @@
 // models/Category.js
 const mongoose = require("mongoose");
 
-const categorySchema = new mongoose.Schema(
+const brandSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -17,7 +17,7 @@ const categorySchema = new mongoose.Schema(
     },
     parent: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Category", // เชื่อมโยงกับโมเดล Category
+      ref: "Brand", // เชื่อมโยงกับโมเดล Brand
       default: null, // หมายถึงไม่มีหมวดหมู่หลัก
     },
   },
@@ -27,6 +27,6 @@ const categorySchema = new mongoose.Schema(
 );
 
 
-const Category = mongoose.model("Category", categorySchema);
+const Brand = mongoose.model("Brand", brandSchema);
 
-module.exports = Category;
+module.exports = Brand;

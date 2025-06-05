@@ -7,23 +7,29 @@ const productSchema = new mongoose.Schema({
       required: true,
       trim: true,
     },
-    description: {
+    details: {
       type: String,
       required: true,
     },
-    category: {
+    brand: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Category", // เชื่อมโยงกับโมเดล Category
+      ref: "Brand", 
+      required: true,
+    },
+    category: {
+      type: String,
+      enum: ["Figure", "Action Figure", "Blind Box", "Plush Toys", "Art Work", "OTHER"],
       required: true,
     },
     rarity: {
       type: String,
-      enum: ["ทั่วไป", "หายาก", "พิเศษ", "ลิมิเต็ด"],
-      default: "ทั่วไป",
+      enum: ["Common", "Secret", "Limited"],
+      default: "Common",
+      required: true,
     },
     tags: [{
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Tag" // เชื่อมโยงกับโมเดล Tag
+      ref: "Tag" 
     }],
     price: {
       type: Number,
@@ -31,14 +37,14 @@ const productSchema = new mongoose.Schema({
       min: 0,
     },
     images: {
-      type: [String], // เก็บ URL รูปภาพ (หลายรูป)
+      type: [String], 
       validate: v=> Array.isArray(v) && v.length > 0, // ต้องมีอย่างน้อย 1 รูป
       required: true,
     },
     condition: {
       type: String,
-      enum: ["มือ 1", "มือ 2"],
-      default: "มือ 2",
+      enum: ["Pre-owned", "Brand New"],
+      default: "Pre-owned",
     },
     isSold: {
       type: Boolean,
@@ -49,15 +55,24 @@ const productSchema = new mongoose.Schema({
       ref: "User",
       required: true,
     },
+    status: {
+      type: String,
+      enum: ['Published', 'Pending', 'Reported', 'Hidden'],
+      default: 'Pending',
+    },
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
       },
-    ]
+    ],
+    views: {
+      type: Number,
+      default: 0,
+    },
   },
   {
-    timestamps: true, // เพิ่ม createdAt / updatedAt ให้อัตโนมัติ
+    timestamps: true, 
   }
 );
 

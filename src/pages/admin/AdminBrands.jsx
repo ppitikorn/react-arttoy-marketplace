@@ -1,38 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function AdminCategories() {
-  const [categories, setCategories] = useState([]);
-  const [newCategory, setNewCategory] = useState('');
-  const [parentCategory, setParentCategory] = useState(null);
-  //const [editingCategory, setEditingCategory] = useState(null);
+function AdminBrands() {
+  const [brands, setBrands] = useState([]);
+  const [newBrand, setNewBrand] = useState('');
+  const [parentBrand, setParentBrand] = useState(null);
+  //const [editingBrand, setEditingBrand] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    fetchCategories();
+    fetchBrands();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchBrands = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('http://localhost:5000/api/category/parent');
-      setCategories(response.data);
+      const response = await axios.get('http://localhost:5000/api/admin/brands/parent');
+      setBrands(response.data);
       setIsLoading(false);
     } catch (error) {
-      setError('Failed to fetch categories');
+      setError('Failed to fetch brands');
       setIsLoading(false);
     }
   };
 
-  const handleCreateCategory = async (e) => {
+  const handleCreateBrand = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/category', 
+      await axios.post('http://localhost:5000/api/admin/brands', 
         { 
-          name: newCategory,
-          parent: parentCategory
+          name: newBrand,
+          parent: parentBrand
         },
         {
           headers: {
@@ -40,17 +40,17 @@ function AdminCategories() {
             'Content-Type': 'application/json',
           }
         });
-      setNewCategory('');
-      setParentCategory(null);
-      fetchCategories();
+      setNewBrand('');
+      setParentBrand(selected => selected === "null" ? null : selected); 
+      fetchBrands();
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to create category');
+      setError(error.response?.data?.message || 'Failed to create brand');
     }
   };
 
-  const handleUpdateCategory = async (id, newName) => {
+  const handleUpdateBrand = async (id, newName) => {
     try {
-      await axios.put(`http://localhost:5000/api/category/${id}`,
+      await axios.put(`http://localhost:5000/api/admin/brands/${id}`,
         { name: newName },
         { 
           headers: { 
@@ -59,16 +59,16 @@ function AdminCategories() {
           } 
         }
       );
-      //setEditingCategory(null);
-      fetchCategories();
+      //setEditingBrand(null);
+      fetchBrands();
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to update category');
+      setError(error.response?.data?.message || 'Failed to update brand');
     }
   };
-  const handleDeleteCategory = async (id) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
+  const handleDeleteBrand = async (id) => {
+    if (window.confirm('Are you sure you want to delete this brand?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/category/${id}`,
+        await axios.delete(`http://localhost:5000/api/admin/brands/${id}`,
           { 
             headers: { 
               'Authorization': `Bearer ${token}`,
@@ -76,40 +76,40 @@ function AdminCategories() {
             } 
           }
         );
-        fetchCategories();
+        fetchBrands();
       } catch (error) {
-        setError(error.response?.data?.message || 'Failed to delete category');
+        setError(error.response?.data?.message || 'Failed to delete brand');
       }
     }
   };
 
-  // Function to build the category tree
-  const buildCategoryTree = (categories) => {
+  // Function to build the brand tree
+  const buildBrandTree = (brands) => {
     const map = {};
     const roots = [];
 
-    categories.forEach(cat => {
-      map[cat._id] = { ...cat, children: [] };
+    brands.forEach(brand => {
+      map[brand._id] = { ...brand, children: [] };
     });
 
-    categories.forEach(cat => {
-      if (cat.parent && cat.parent._id) {
-        map[cat.parent._id]?.children.push(map[cat._id]);
+    brands.forEach(brand => {
+      if (brand.parent && brand.parent._id) {
+        map[brand.parent._id]?.children.push(map[brand._id]);
       } else {
-        roots.push(map[cat._id]);
+        roots.push(map[brand._id]);
       }
     });
 
     return roots;
   };
 
-  // Recursive component to render the category tree with edit/delete functionality
-  const CategoryTreeNode = ({ node, depth = 0 }) => {
+  // Recursive component to render the brand tree with edit/delete functionality
+  const BrandTreeNode = ({ node, depth = 0 }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedName, setEditedName] = useState(node.name);
 
     const handleSave = () => {
-      handleUpdateCategory(node._id, editedName);
+      handleUpdateBrand(node._id, editedName);
       setIsEditing(false);
     };
 
@@ -155,7 +155,7 @@ function AdminCategories() {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDeleteCategory(node._id)}
+                  onClick={() => handleDeleteBrand(node._id)}
                   className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                 >
                   Delete
@@ -167,7 +167,7 @@ function AdminCategories() {
         {node.children && node.children.length > 0 && (
           <div className="ml-4">
             {node.children.map(child => (
-              <CategoryTreeNode key={child._id} node={child} depth={depth + 1} />
+              <BrandTreeNode key={child._id} node={child} depth={depth + 1} />
             ))}
           </div>
         )}
@@ -175,39 +175,39 @@ function AdminCategories() {
     );
   };
 
-  const categoryTree = buildCategoryTree(categories);
+  const brandTree = buildBrandTree(brands);
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-white">Category Management</h1>
-      
-      {/* Create Category Form */}
+      <h1 className="text-3xl font-bold mb-8 text-white">Brand Management</h1>
+
+      {/* Create Brand Form */}
       <div className="bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-white">Create New Category</h2>
-        <form onSubmit={handleCreateCategory} className="flex gap-4">
+        <h2 className="text-xl font-semibold mb-4 text-white">Create New Brand</h2>
+        <form onSubmit={handleCreateBrand} className="flex gap-4">
           <input
             type="text"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            placeholder="Category name"
+            value={newBrand}
+            onChange={(e) => setNewBrand(e.target.value)}
+            placeholder="Brand name"
             className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
-          <label className="text-white" htmlFor='parentCategory'>Parent Category:</label>
+          <label className="text-white" htmlFor='parentBrand'>Parent Brand:</label>
           <select 
-            id='parentCategory'
-            value={parentCategory} 
+            id='parentBrand'
+            value={parentBrand} 
             onChange={(e) => {
               const selected = e.target.value;
-              setParentCategory(selected === "null" ? null : selected);
+              setParentBrand(selected === "null" ? null : selected);
             }}
             className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="null">Root</option>
-            {categories.filter((category) => category.parent === null)
-            .map((category) => (
-              <option key={category._id} value={category._id}>
-                {category.name}
+            {brands.filter((brand) => brand.parent === null)
+            .map((brand) => (
+              <option key={brand._id} value={brand._id}>
+                {brand.name}
               </option>
             ))}
           </select>
@@ -227,17 +227,17 @@ function AdminCategories() {
         </div>
       )}
 
-      {/* Category Tree */}
+      {/* Brand Tree */}
       <div className="bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4 text-white">Category Tree</h2>
+        <h2 className="text-xl font-semibold mb-4 text-white">Brand Tree</h2>
         {isLoading ? (
-          <div className="text-white">Loading categories...</div>
-        ) : categories.length === 0 ? (
-          <div className="text-gray-400">No categories found</div>
+          <div className="text-white">Loading brands...</div>
+        ) : brands.length === 0 ? (
+          <div className="text-gray-400">No brands found</div>
         ) : (
           <div className="space-y-2">
-            {categoryTree.map(category => (
-              <CategoryTreeNode key={category._id} node={category} />
+            {brandTree.map(brand => (
+              <BrandTreeNode key={brand._id} node={brand} />
             ))}
           </div>
         )}
@@ -246,4 +246,4 @@ function AdminCategories() {
   );
 }
 
-export default AdminCategories;
+export default AdminBrands;

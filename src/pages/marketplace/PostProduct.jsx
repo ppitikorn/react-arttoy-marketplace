@@ -1,224 +1,321 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import BrandSelect from '../../components/form/BrandSelect';
+import TagsSelect from '../../components/form/TagsSelect';
+import { 
+  Form, 
+  Input, 
+  Select, 
+  Upload, 
+  Button, 
+  message, 
+  Card, 
+  Space,
+  InputNumber,
+  Typography
+} from 'antd';
+import { 
+  PlusOutlined, 
+  LoadingOutlined, 
+  DeleteOutlined 
+} from '@ant-design/icons';
+
+const { Title } = Typography;
+const { TextArea } = Input;
+const { Option } = Select;
 
 export default function PostProduct() {
+  const [form] = Form.useForm();
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     price: '',
-    category: 'Labubu',
-    description: '',
-    condition: 'New'
+    category: '',
+    brand: '',
+    images: [],
+    details: '',
+    condition: '',
+    rarity: '',
+    tags: []
   });
-  const [images, setImages] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [previewUrls, setPreviewUrls] = useState([]);
-  const [error, setError] = useState('');
-  const [price, setPrice] = useState("");
+  const [images, setImages] = useState([]);
+  // const [error, setError] = useState('');
+  // const [price, setPrice] = useState("");
 
-  const handleInput = (e) => {
-    const value = e.target.value.replace(/\D/g, ""); // ลบตัวอักษรทั้งหมด ยกเว้นตัวเลข
-    setPrice(value);
-    setFormData(prev => ({
-      ...prev,
-      price: value
-    }));
-  };
+ 
+  const categories = [
+    { label: 'Figure', value: 'Figure' },
+    { label: 'Action Figure', value: 'Action Figure' },
+    { label: 'Blind Box', value: 'Blind Box' },
+    { label: 'Plush Toys', value: 'Plush Toys' },
+    { label: 'Art Work', value: 'Art Work' },
+    { label: 'Other', value: 'OTHER' }
+  ];
 
-  const categories = ['Labubu', 'Molly', 'Crybaby', 'Limited Edition', 'Other'];
-  const conditions = ['New', 'Like New', 'Used - Good', 'Used - Fair'];
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  useEffect(() => {
+    fetchBrandsAndTags();
+  }, []);
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length + images.length > 4) {
-      setError('Maximum 4 images allowed');
+  const fetchBrandsAndTags = async () => {
+      try {
+        const [BrandsRes, tagsRes] = await Promise.all([
+          axios.get('http://localhost:5000/api/brand/'),
+          axios.get('http://localhost:5000/api/tags')
+        ]);
+        setBrands(BrandsRes.data);
+        setAvailableTags(tagsRes.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        message.error('Failed to load brands and tags');
+      }
+    };
+
+  const handleImageChange = ({ fileList }) => {
+    if (fileList.length > 4) {
+      message.error('Maximum 4 images allowed');
       return;
     }
-
-    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
-    setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
-    setImages(prev => [...prev, ...files]);
-    setError('');
+    
+    const newPreviewUrls = fileList.map(file => {
+      if (file.url) return file.url;
+      return URL.createObjectURL(file.originFileObj);
+    });
+    
+    setPreviewUrls(newPreviewUrls);
+    setImages(fileList.map(file => file.originFileObj));
+    setFormData(prev => ({ ...prev, images: fileList }));
   };
 
-  const removeImage = (index) => {
-    URL.revokeObjectURL(previewUrls[index]);
-    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
-    setImages(prev => prev.filter((_, i) => i !== index));
-  };
+  const uploadButton = (
+    <div>
+      <PlusOutlined />
+      <div style={{ marginTop: 8 }}>Upload</div>
+    </div>
+  );
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form Data:', formData);
-    console.log('Images:', images);
-    if (images.length === 0) {
-      setError('Please upload at least one image');
-      return;
+  const handleSubmit = async (values) => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const formDataToSend = new FormData();
+      
+      // Append all the form fields
+      formDataToSend.append('title', values.title);
+      formDataToSend.append('price', values.price);
+      formDataToSend.append('category', values.category);
+      formDataToSend.append('brand', values.brand);
+      formDataToSend.append('details', values.details);
+      formDataToSend.append('condition', values.condition);
+      formDataToSend.append('rarity', values.rarity);
+      
+      if (values.tags && values.tags.length > 0) {
+        values.tags.forEach(tag => {
+          formDataToSend.append('tags', tag);
+        });
+      }
+
+      // Append each image file with the field name 'images'
+      if (images && images.length > 0) {
+        images.forEach(file => {
+          formDataToSend.append('images', file);
+        });
+      }
+      // Log the formDataToSend for debugging
+      console.log('FormData to send:', formDataToSend);
+      const response = await axios.post('http://localhost:5000/api/products', formDataToSend, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      console.log('Product created:', response.data);
+      message.success('Product created successfully');
+      form.resetFields();
+      setImages([]);
+      setPreviewUrls([]);
+      setFormData({
+        title: '',
+        price: '',
+        category: '',
+        brand: '',
+        images: [],
+        details: '',
+        condition: '',
+        rarity: '',
+        tags: []
+      });
+    } catch (error) {
+      console.error('Error creating product:', error);
+      message.error(error.response?.data?.message || 'Failed to create product');
+    } finally {
+      setIsLoading(false);
     }
-    // TODO: Implement product upload logic
+  };
+
+  // const uploadImages = async (imageFiles) => {
+  //   const uploadPromises = imageFiles.map(async (file) => {
+  //     const formData = new FormData();
+  //     formData.append('image', file);
+  //     const response = await axios.post('/api/upload', formData);
+  //     return response.data.url;
+  //   });
+
+  //   return Promise.all(uploadPromises);
+  // };
+
+  // Add form values change handler
+ 
+  const onValuesChange = (changedValues, allValues) => {
+    setFormData(prev => ({
+      ...prev,
+      ...changedValues
+    }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <div className="pt-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-gray-800 rounded-xl p-6 md:p-8">
-            <h1 className="text-2xl font-bold text-white mb-6">List Your Art Toy</h1>
+    <div style={{ minHeight: '100vh', background: '#f0f2f5', padding: '24px' }}>
+      <Card style={{ maxWidth: 800, margin: '0 auto' }}>
+        <Title level={2} style={{ marginBottom: 24 }}>List Your Art Toy</Title>
 
-            {error && (
-              <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
-                {error}
-              </div>
-            )}
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={formData}
+          onValuesChange={onValuesChange}
+        >
+          <Form.Item
+            label="Product Images"
+            name="images"
+            rules={[{ required: true, message: 'Please upload at least one image' }]}
+          >
+            <Upload
+              accept="image/*"
+              multiple
+              name='images'
+              listType="picture-card"
+              fileList={formData.images}
+              onChange={handleImageChange}
+              beforeUpload={() => false}
+              maxCount={4}
+              showUploadList={{ showPreviewIcon: false, showRemoveIcon: true }}
+            >
+              {formData.images.length >= 4 ? null : uploadButton}
+            </Upload>
+          </Form.Item>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Product Images (Max 4)
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                  {previewUrls.map((url, index) => (
-                    <div key={index} className="relative aspect-square">
-                      <img
-                        src={url}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                      >
-                        ×
-                      </button>
-                    </div>
+          <Form.Item
+            label="Product Title"
+            name="title"
+            rules={[{ required: true, message: 'Please enter product title' }]}
+          >
+            <Input placeholder="Enter product title" />
+          </Form.Item>
+
+          <Space style={{ width: '100%' }} direction="vertical" size="large">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <Form.Item
+                label="Category"
+                name="category"
+                rules={[{ required: true, message: 'Please select a category' }]}
+              >
+                <Select placeholder="Select Category">
+                  {categories.map(cat => (
+                    <Option key={cat.value} value={cat.value}>{cat.label}</Option>
                   ))}
-                  {previewUrls.length < 4 && (
-                    <label className="aspect-square border-2 border-dashed border-gray-600 rounded-lg hover:border-purple-500 cursor-pointer flex items-center justify-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                      <div className="text-center">
-                        <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span className="mt-2 block text-sm font-medium text-gray-400">Add Image</span>
-                      </div>
-                    </label>
-                  )}
-                </div>
-              </div>
+                </Select>
+              </Form.Item>
 
-              {/* Product Details */}
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-300">
-                    Product Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                  />
-                </div>
+              <Form.Item
+                label="Brand"
+                name="brand"
+                rules={[{ required: true, message: 'Please select a brand' }]}
+              >
+                <BrandSelect
+                  brands={brands}
+                />
+              </Form.Item>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="price" className="block text-sm font-medium text-gray-300">
-                      Price ($)
-                    </label>
-                    <input
-                      type="text"
-                      inputMode='numeric'
-                      id="price"
-                      name="price"
-                      required
-                      min="0"
-                      value={price}
-                      onChange={handleChange}
-                      onInput={handleInput}
-                      placeholder="บาท"
-                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                    />
-                  </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <Form.Item
+                label="Condition"
+                name="condition"
+                rules={[{ required: true, message: 'Please select condition' }]}
+              >
+                <Select placeholder="Select Condition">
+                  <Option value="Pre-owned">Pre-owned</Option>
+                  <Option value="Brand New">Brand New</Option>
+                </Select>
+              </Form.Item>
 
-                  <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-300">
-                      Category
-                    </label>
-                    <select
-                      id="category"
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                    >
-                      {categories.map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+              <Form.Item
+                label="Rarity"
+                name="rarity"
+                rules={[{ required: true, message: 'Please select rarity' }]}
+              >
+                <Select placeholder="Select Rarity">
+                  <Option value="Common">Common</Option>
+                  <Option value="Secret">Secret</Option>
+                  <Option value="Limited">Limited Edition</Option>
+                </Select>
+              </Form.Item>
+            </div>
+            <Form.Item
+              label="Details"
+              name="details"
+              rules={[{ required: true, message: 'Please enter product details' }]}
+            >
+              <TextArea rows={4} placeholder="Enter product details" />
+            </Form.Item>            
+            <Form.Item
+              label="Tags"
+              name="tags"
+              rules={[{ required: true, message: 'Please select at least one tag' }]}
+            >
+              <TagsSelect 
+                availableTags={availableTags}
+              />
+            </Form.Item>
+            <Form.Item
+              label="Price (฿)"
+              name="price"
+              rules={[{ required: true, message: 'Please enter price' }]}
+            >
+              <InputNumber
+                style={{ width: '100%' }}
+                placeholder="บาท"
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value.replace(/\$\s?|(,*)/g, '')}
+              />
+            </Form.Item>
+          </Space>
 
-                <div>
-                  <label htmlFor="condition" className="block text-sm font-medium text-gray-300">
-                    Condition
-                  </label>
-                  <select
-                    id="condition"
-                    name="condition"
-                    value={formData.condition}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                  >
-                    {conditions.map(condition => (
-                      <option key={condition} value={condition}>{condition}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-300">
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    rows="4"
-                    required
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                >
-                  List Product
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
+          <Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isLoading}
+              style={{ width: '100%', height: '40px', marginTop: '16px' }}
+            >
+              {isLoading ? 'Creating...' : 'List Product'}
+            </Button>
+              <Button
+                type="default"
+                onClick={async () => {
+                  console.log("FormData", formData);
+                }} // Log the selected category
+              >
+                Log Selected Category
+              </Button>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 }
