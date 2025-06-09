@@ -25,6 +25,8 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
-    "sharp": "^0.34.1"
+    "sharp": "^0.34.1",
+    "slugify": "^1.6.6",
+    "uuid": "^11.1.0"
   }
 }

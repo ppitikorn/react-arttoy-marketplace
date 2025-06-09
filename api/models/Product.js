@@ -7,6 +7,11 @@ const productSchema = new mongoose.Schema({
       required: true,
       trim: true,
     },
+    slug: {
+      type: String,
+      required: true,
+      unique: true, // Ensure slug is unique
+    },
     details: {
       type: String,
       required: true,

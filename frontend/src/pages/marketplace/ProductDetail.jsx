@@ -1,146 +1,274 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 
 const ProductDetail = () => {
-  const { id } = useParams();
+  const { slug } = useParams();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeImage, setActiveImage] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [selectedImage, setSelectedImage] = useState(0);
 
-  // Mock data - replace with API call
-  const product = {
-    id: 1,
-    name: "Designer Art Toy #1",
-    artist: "John Artist",
-    price: 299.99,
-    description: "A unique designer art toy handcrafted with precision and care. Limited edition piece featuring intricate details and premium materials.",
-    images: [
-      "https://source.unsplash.com/random/800x800/?toy,art",
-      "https://source.unsplash.com/random/800x800/?designer,toy",
-      "https://source.unsplash.com/random/800x800/?collectible",
-      "https://source.unsplash.com/random/800x800/?artwork",
-    ],
-    details: {
-      material: "Premium Vinyl",
-      height: "12 inches",
-      weight: "2.5 lbs",
-      edition: "Limited Edition (100 pieces)",
-      releaseDate: "2025-04-15"
-    },
-    seller: {
-      id: 'seller1',
-      name: "John Artist",
-      rating: 4.8,
-      sales: 156,
-      joinedDate: "2024-01-15",
-      avatar: "https://source.unsplash.com/random/100x100/?portrait"
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`http://localhost:5000/api/products/${slug}`);
+        setProduct(response.data);
+        console.log('Fetched product details:', response.data);
+      } catch (error) {
+        console.error('Error fetching product details:', error);
+        setError(error.response?.data?.message || 'Failed to fetch product details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (slug) {
+      fetchProductDetails();
     }
-  };
+  }, [slug]);
 
-  const handleContactSeller = () => {
-    navigate(`/chat/${product.seller.id}`, { 
-      state: { product }
-    });
-  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF4C4C] border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">Error</h2>
+        <p className="text-gray-600">{error}</p>
+        <Link to="/products" className="mt-4 bg-[#FF4C4C] hover:bg-red-600 text-white px-4 py-2 rounded">
+          Back to Products
+        </Link>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <h2 className="text-2xl font-bold text-gray-700 mb-4">Product Not Found</h2>
+        <Link to="/products" className="mt-4 bg-[#FF4C4C] hover:bg-red-600 text-white px-4 py-2 rounded">
+          Back to Products
+        </Link>
+      </div>
+    );
+  }
+
+  const isLikedByUser = user && product.likes.includes(user._id);
+  const isSeller = user && user._id === product.seller._id;
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
+    <div className="min-h-screen bg-[#f0f2f5] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            <div className="aspect-square rounded-lg overflow-hidden bg-gray-800">
-              <img
-                src={product.images[selectedImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
+            {/* Product Images */}
+            <div className="space-y-4">
+              <div className="aspect-w-1 aspect-h-1 bg-gray-200 rounded-lg overflow-hidden">
+                <img
+                  src={product.images[activeImage]}
+                  alt={product.title}
+                  className="w-full h-96 object-contain"
+                />
+              </div>
+              
+              {/* Thumbnail Images */}
+              {product.images.length > 1 && (
+                <div className="flex space-x-2 overflow-x-auto pb-2">
+                  {product.images.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveImage(index)}
+                      className={`w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 ${
+                        activeImage === index ? 'border-[#FF4C4C]' : 'border-gray-200'
+                      }`}
+                    >
+                      <img
+                        src={image}
+                        alt={`${product.title} - ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="grid grid-cols-4 gap-4">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square rounded-lg overflow-hidden ${
-                    selectedImage === index ? 'ring-2 ring-blue-500' : ''
-                  }`}
+
+            {/* Product Details */}
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
+                <div className="flex items-center mt-2">
+                  <span className={`px-2 py-1 text-sm rounded ${
+                    product.rarity === 'Limited' ? 'bg-red-100 text-red-600' :
+                    product.rarity === 'Secret' ? 'bg-purple-100 text-purple-600' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {product.rarity}
+                  </span>
+                  <span className="ml-2 px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded">
+                    {product.condition}
+                  </span>
+                  <span className="ml-2 px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded">
+                    {product.category}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-4xl font-bold text-[#FF4C4C]">
+                ฿{product.price.toLocaleString()}
+              </div>
+
+              {/* Seller Information */}
+              <div className="border-t border-b border-gray-200 py-4">
+                <h2 className="text-lg font-semibold mb-2">Seller</h2>
+                <Link
+                  to={`/profile/${product.seller.username}`}
+                  className="flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <img
-                    src={image}
-                    alt={`${product.name} view ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    src={product.seller.avatar || 'https://via.placeholder.com/50'}
+                    alt={product.seller.name}
+                    className="w-12 h-12 rounded-full border border-gray-300"
                   />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Product Information */}
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{product.name}</h1>
-              <p className="text-gray-400">by {product.artist}</p>
-            </div>
-
-            <div className="text-2xl font-bold text-blue-400">
-              ${product.price.toFixed(2)}
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold text-white mb-2">Description</h2>
-              <p className="text-gray-300">{product.description}</p>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold text-white mb-2">Details</h2>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {Object.entries(product.details).map(([key, value]) => (
-                  <div key={key}>
-                    <dt className="text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</dt>
-                    <dd className="text-white">{value}</dd>
+                  <div>
+                    <p className="font-medium text-gray-900">{product.seller.name}</p>
+                    <p className="text-sm text-gray-500">@{product.seller.username}</p>
                   </div>
-                ))}
-              </dl>
-            </div>
+                  {product.seller.emailVerified && (
+                    <svg
+                      className="w-5 h-5 text-blue-500 ml-auto"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </Link>
+              </div>
 
-            <button
-              onClick={handleContactSeller}
-              className="w-full bg-blue-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 flex items-center justify-center space-x-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <span>Contact Seller</span>
-            </button>
-
-            {/* Seller Information */}
-            <div className="border-t border-gray-800 pt-6">
-              <h2 className="text-xl font-semibold text-white mb-4">About the Seller</h2>
-              <div className="flex items-center space-x-4">
-                <img
-                  src={product.seller.avatar}
-                  alt={product.seller.name}
-                  className="w-16 h-16 rounded-full object-cover"
-                />
-                <div>
-                  <h3 className="text-lg font-medium text-white">{product.seller.name}</h3>
-                  <div className="flex items-center text-gray-400">
-                    <span className="flex items-center">
-                      {product.seller.rating}
-                      <svg className="h-5 w-5 text-yellow-400 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              {/* Action Buttons */}
+              <div className="flex space-x-4">
+                {!isSeller && (
+                  <>
+                    <button
+                      disabled={likeLoading}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors ${
+                        isLikedByUser
+                          ? 'bg-red-100 text-red-600 border border-red-200 hover:bg-red-200'
+                          : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                      }`}
+                    >
+                      <svg
+                        className={`w-5 h-5 ${isLikedByUser ? 'text-red-500 fill-current' : 'text-gray-400'}`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        fill="none"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                        />
                       </svg>
-                    </span>
-                    <span className="mx-2">•</span>
-                    <span>{product.seller.sales} sales</span>
-                  </div>
-                  <p className="text-sm text-gray-400">
-                    Member since {new Date(product.seller.joinedDate).toLocaleDateString()}
-                  </p>
+                      <span>{isLikedByUser ? 'Liked' : 'Like'}</span>
+                      {product.likes.length > 0 && (
+                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+                          {product.likes.length}
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#FF4C4C] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                      <span>Chat with Seller</span>
+                    </button>
+                  </>
+                )}
+
+                {isSeller && (
+                  <button
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                    onClick={() => navigate(`/edit-product/${product.slug}`)}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                      />
+                    </svg>
+                    <span>Edit Product</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Product Description */}
+              <div className="border-t border-gray-200 pt-4">
+                <h2 className="text-lg font-semibold mb-2">Description</h2>
+                <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-line">
+                  {product.details}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Product Tags */}
+        {product.tags && product.tags.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md mt-6 p-6">
+            <h2 className="text-lg font-semibold mb-4">Tags</h2>
+            <div className="flex flex-wrap gap-2">
+              {product.tags.map(tag => (
+                <span
+                  key={tag._id}
+                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

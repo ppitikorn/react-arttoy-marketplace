@@ -2,12 +2,14 @@
 // It includes user management, category management, and product management.
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 const { authenticateJWT, isAdmin } = require('../middleware/auth');
 const User = require('../models/User');
 const Tag = require('../models/Tag');
 const Brand = require('../models/Brand');
 const Product = require('../models/Product');
-const bcrypt = require('bcryptjs');
+const Report = require('../models/Report');
+const cloudinary = require('cloudinary').v2;
 
 // Get all users (Admin only)
 router.get('/users', authenticateJWT, isAdmin, async (req, res) => {
@@ -245,6 +247,17 @@ router.delete('/products/:id', authenticateJWT, isAdmin, async (req, res) => {
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
+    }
+    if (product.images && product.images.length > 0) {
+      try {
+        // Delete images from Cloudinary
+        for (const image of product.images) {
+          const publicId = image.split('/').slice(-1)[0].split('.')[0];
+          await cloudinary.uploader.destroy(`arttoy/product/${publicId}`);
+        }
+      } catch (error) {
+        console.error('Error deleting images from Cloudinary:', error);
+      }
     }
 
     res.json({ message: 'Product deleted successfully' });

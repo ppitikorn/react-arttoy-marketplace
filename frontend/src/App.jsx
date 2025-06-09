@@ -7,7 +7,6 @@ import Login from './pages/auth/Login';
 import Profile from './pages/profile/Profile';
 import ProductList from './pages/marketplace/ProductList';
 import ProductDetail from './pages/marketplace/ProductDetail';
-import ChatPage from './pages/chat/ChatPage';
 import PostProduct from './pages/marketplace/PostProduct';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import OAuthCallback from './pages/auth/OAuthCallback';
@@ -29,7 +28,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/oauth/callback" element={<OAuthCallback />} />
               <Route path="/marketplace" element={<ProductList />} />
-              <Route path="/marketplace/:id" element={<ProductDetail />} />
+              <Route path="/products/:slug" element={<ProductDetail />} />
               <Route 
                 path="/profile" 
                 element={
@@ -46,14 +45,14 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route 
+              {/* <Route 
                 path="/chat/:sellerId" 
                 element={
                   <ProtectedRoute>
                     <ChatPage />
                   </ProtectedRoute>
                 } 
-              />
+              /> */}
 
               <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminLayout /></ProtectedRoute>}>
                 <Route path="users" element={<AdminUsers />} />
