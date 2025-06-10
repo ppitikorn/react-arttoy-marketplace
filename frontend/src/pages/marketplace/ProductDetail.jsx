@@ -12,32 +12,67 @@ const ProductDetail = () => {
   const [likeLoading, setLikeLoading] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [viewsCount, setViewsCount] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Generate session ID for anonymous users
+  const getSessionId = () => {
+    let sessionId = localStorage.getItem('sessionId');
+    if (!sessionId) {
+      sessionId = 'sess_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+      localStorage.setItem('sessionId', sessionId);
+    }
+    return sessionId;
+  };
 
+  // Track product view
+  const trackView = async () => {
+    try {
+      const response = await axios.post(`http://localhost:5000/api/products/${slug}/view`, {
+        userId: user?._id || null,
+        sessionId: getSessionId(),
+        userAgent: navigator.userAgent,
+        ip: 'client_ip' // In production, get this from server
+      });
+
+      if (response.data.success) {
+        setViewsCount(response.data.viewsCount);
+        console.log(response.data.message);
+      }
+    } catch (error) {
+      console.error('Error tracking view:', error);
+      // Don't show error to user, view tracking is background operation
+    }
+  };
 
   const fetchLikeStatus = async () => {
-      if (user && slug) {
-        try {
-          const response = await axios.get(`http://localhost:5000/api/products/${slug}/like-status`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          });
-          setIsLiked(response.data.isLiked);
-          setLikesCount(response.data.likesCount);
-          console.log('Fetched like status:', response.data);
-        } catch (error) {
-          console.error('Error fetching like status:', error);
-        }
+    if (user && slug) {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/products/${slug}/like-status`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        setIsLiked(response.data.isLiked);
+        setLikesCount(response.data.likesCount);
+        console.log('Fetched like status:', response.data);
+      } catch (error) {
+        console.error('Error fetching like status:', error);
       }
-    };
+    }
+  };
+
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`http://localhost:5000/api/products/${slug}`);
         setProduct(response.data);
+        setViewsCount(response.data.views || 0);
         console.log('Fetched product details:', response.data);
+        
+        // Track view after product is loaded
+        setTimeout(() => trackView(), 1000); // Delay to ensure page is actually viewed
+        
       } catch (error) {
         console.error('Error fetching product details:', error);
         setError(error.response?.data?.message || 'Failed to fetch product details');
@@ -46,14 +81,13 @@ const ProductDetail = () => {
       }
     };
 
-
     if (slug) {
       fetchProductDetails();
       fetchLikeStatus();
     }
   }, [slug]);
 
-  // Like toggle function
+  // Like toggle function (keep existing)
   const handleLikeToggle = async () => {
     if (!user) {
       alert('Please login to like products');
@@ -105,6 +139,7 @@ const ProductDetail = () => {
       setLikeLoading(false);
     }
   };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -337,7 +372,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Product Stats */}
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+              {/* <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">{likesCount}</div>
                   <div className="text-sm text-gray-500">Likes</div>
@@ -345,6 +380,22 @@ const ProductDetail = () => {
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">{product.views || 0}</div>
                   <div className="text-sm text-gray-500">Views</div>
+                </div>
+              </div> */}
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{likesCount}</div>
+                  <div className="text-sm text-gray-500">Likes</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{viewsCount}</div>
+                  <div className="text-sm text-gray-500">Views</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {viewsCount > 0 ? ((likesCount / viewsCount) * 100).toFixed(1) : 0}%
+                  </div>
+                  <div className="text-sm text-gray-500">Like Rate</div>
                 </div>
               </div>
 

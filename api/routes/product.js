@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateJWT } = require('../middleware/auth');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const ProductView = require('../models/ProductView'); // Import the ProductView model
 const { uploadProduct } = require('../middleware/uploadMiddleware'); // Import the upload middleware
 const slugify = require('slugify');
 const { v4: uuidv4 } = require('uuid');
@@ -161,6 +162,125 @@ router.get('/:slug/like-status', authenticateJWT, async (req, res) => {
   } catch (error) {
     console.error('Get like status error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post('/:slug/view', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { userId, sessionId, userAgent, ip } = req.body;
+
+    const product = await Product.findOne({ slug });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Don't count view if user is the seller
+    if (userId && product.seller.toString() === userId) {
+      return res.json({
+        success: true,
+        viewCounted: false,
+        viewsCount: product.views,
+        message: 'Own product view not counted'
+      });
+    }
+
+    // Check for duplicate views (within last 24 hours)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    let shouldCountView = true;
+    
+    if (userId) {
+      // For logged-in users: check if they viewed this product recently
+      const recentView = await ProductView.findOne({
+        product: product._id,
+        userId: userId,
+        createdAt: { $gte: oneDayAgo }
+      });
+      shouldCountView = !recentView;
+    } else {
+      // For anonymous users: check by session/IP
+      const recentView = await ProductView.findOne({
+        product: product._id,
+        $or: [
+          { sessionId: sessionId },
+          { ip: ip }
+        ],
+        createdAt: { $gte: oneDayAgo }
+      });
+      shouldCountView = !recentView;
+    }
+
+    if (shouldCountView) {
+      // Increment view counter
+      product.views = (product.views || 0) + 1;
+      await product.save();
+
+      // Record the view for duplicate prevention
+      const newView = new ProductView({
+        product: product._id,
+        userId: userId || null,
+        sessionId: sessionId,
+        ip: ip,
+        userAgent: userAgent
+      });
+      await newView.save();
+
+      res.json({
+        success: true,
+        viewCounted: true,
+        viewsCount: product.views,
+        message: 'View counted successfully'
+      });
+    } else {
+      res.json({
+        success: true,
+        viewCounted: false,
+        viewsCount: product.views,
+        message: 'Duplicate view not counted'
+      });
+    }
+
+  } catch (error) {
+    console.error('View tracking error:', error);
+    res.status(500).json({ message: 'Failed to track view' });
+  }
+});
+
+// Get view analytics for a product (optional - for sellers)
+router.get('/:slug/analytics', authenticateJWT, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user._id;
+
+    const product = await Product.findOne({ slug });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Only seller can view analytics
+    if (product.seller.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Get view analytics
+    const totalViews = product.views || 0;
+    const uniqueViews = await ProductView.countDocuments({ product: product._id });
+    const todayViews = await ProductView.countDocuments({
+      product: product._id,
+      createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+    });
+
+    res.json({
+      totalViews,
+      uniqueViews,
+      todayViews,
+      conversionRate: product.likes.length / totalViews * 100 || 0
+    });
+
+  } catch (error) {
+    console.error('Analytics error:', error);
+    res.status(500).json({ message: 'Failed to get analytics' });
   }
 });
 
