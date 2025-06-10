@@ -141,9 +141,12 @@ router.get('/me', authenticateJWT, (req, res) => {
       id: req.user._id,
       email: req.user.email,
       username: req.user.username,
-      role: req.user.role
+      role: req.user.role,
+      likesProducts: req.user.likedProducts
     }
   });
 });
 
 module.exports = router;
+
+

@@ -38,7 +38,7 @@ const Login = () => {
         }
 
         if (result.success) {
-          navigate('/marketplace');
+          navigate('/');
         } else {
           setError(result.error);
         }

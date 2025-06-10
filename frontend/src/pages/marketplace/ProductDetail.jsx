@@ -10,9 +10,27 @@ const ProductDetail = () => {
   const [error, setError] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
   const { user } = useAuth();
   const navigate = useNavigate();
 
+
+
+  const fetchLikeStatus = async () => {
+      if (user && slug) {
+        try {
+          const response = await axios.get(`http://localhost:5000/api/products/${slug}/like-status`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          });
+          setIsLiked(response.data.isLiked);
+          setLikesCount(response.data.likesCount);
+          console.log('Fetched like status:', response.data);
+        } catch (error) {
+          console.error('Error fetching like status:', error);
+        }
+      }
+    };
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
@@ -28,12 +46,65 @@ const ProductDetail = () => {
       }
     };
 
+
     if (slug) {
       fetchProductDetails();
+      fetchLikeStatus();
     }
   }, [slug]);
 
+  // Like toggle function
+  const handleLikeToggle = async () => {
+    if (!user) {
+      alert('Please login to like products');
+      return;
+    }
 
+    setLikeLoading(true);
+    
+    // Optimistic update
+    const wasLiked = product.likes.includes(user._id);
+    const newLikes = wasLiked 
+      ? product.likes.filter(id => id !== user._id)
+      : [...product.likes, user._id];
+    
+    setProduct(prev => ({
+      ...prev,
+      likes: newLikes
+    }));
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `http://localhost:5000/api/products/${slug}/like`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      // Update with server response
+      setProduct(prev => ({
+        ...prev,
+        likes: response.data.isLiked 
+          ? [...prev.likes.filter(id => id !== user._id), user._id]
+          : prev.likes.filter(id => id !== user._id)
+      }));
+      fetchLikeStatus(); // Refresh like status
+      console.log(response.data.message);
+    } catch (error) {
+      // Revert optimistic update on error
+      setProduct(prev => ({
+        ...prev,
+        likes: product.likes
+      }));
+      
+      console.error('Error toggling like:', error);
+      alert('Failed to update like status');
+    } finally {
+      setLikeLoading(false);
+    }
+  };
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -64,13 +135,25 @@ const ProductDetail = () => {
       </div>
     );
   }
-
-  const isLikedByUser = user && product.likes.includes(user._id);
-  const isSeller = user && user._id === product.seller._id;
+  if (user.likesProducts && user.likesProducts.includes(product._id)) {
+    console.log('User has liked this product');
+  }
+  const isSeller = user && user.id === product.seller._id;
 
   return (
     <div className="min-h-screen bg-[#f0f2f5] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
+        <nav className="mb-6">
+          <ol className="flex items-center space-x-2 text-sm text-gray-500">
+            <li><Link to="/" className="hover:text-[#FF4C4C]">Home</Link></li>
+            <li>/</li>
+            <li><Link to="/products" className="hover:text-[#FF4C4C]">Products</Link></li>
+            <li>/</li>
+            <li className="text-gray-900 truncate">{product.title}</li>
+          </ol>
+        </nav>
+
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
             {/* Product Images */}
@@ -90,8 +173,8 @@ const ProductDetail = () => {
                     <button
                       key={index}
                       onClick={() => setActiveImage(index)}
-                      className={`w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 ${
-                        activeImage === index ? 'border-[#FF4C4C]' : 'border-gray-200'
+                      className={`w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors ${
+                        activeImage === index ? 'border-[#FF4C4C]' : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <img
@@ -109,21 +192,22 @@ const ProductDetail = () => {
             <div className="space-y-6">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
-                <div className="flex items-center mt-2">
-                  <span className={`px-2 py-1 text-sm rounded ${
+                <div className="flex items-center mt-2 flex-wrap gap-2">
+                  <span className={`px-3 py-1 text-sm rounded-full ${
                     product.rarity === 'Limited' ? 'bg-red-100 text-red-600' :
                     product.rarity === 'Secret' ? 'bg-purple-100 text-purple-600' :
                     'bg-gray-100 text-gray-600'
                   }`}>
                     {product.rarity}
                   </span>
-                  <span className="ml-2 px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded">
+                  <span className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full">
                     {product.condition}
                   </span>
-                  <span className="ml-2 px-2 py-1 text-sm bg-gray-100 text-gray-600 rounded">
+                  <span className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-full">
                     {product.category}
                   </span>
                 </div>
+                <p className="mt-2 text-gray-700">{product.details}</p>
               </div>
 
               <div className="text-4xl font-bold text-[#FF4C4C]">
@@ -135,20 +219,20 @@ const ProductDetail = () => {
                 <h2 className="text-lg font-semibold mb-2">Seller</h2>
                 <Link
                   to={`/profile/${product.seller.username}`}
-                  className="flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="flex items-center gap-3 p-3 hover:bg-gray-300 rounded-lg transition-colors"
                 >
                   <img
                     src={product.seller.avatar || 'https://via.placeholder.com/50'}
                     alt={product.seller.name}
                     className="w-12 h-12 rounded-full border border-gray-300"
                   />
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium text-gray-900">{product.seller.name}</p>
                     <p className="text-sm text-gray-500">@{product.seller.username}</p>
                   </div>
                   {product.seller.emailVerified && (
                     <svg
-                      className="w-5 h-5 text-blue-500 ml-auto"
+                      className="w-5 h-5 text-blue-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -163,41 +247,51 @@ const ProductDetail = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex space-x-4">
-                {!isSeller && (
-                  <>
+              <div className="space-y-3">
+                {/* {!isSeller && (
+                  <> */}
+                    {/* Like Button */}
                     <button
+                      onClick={handleLikeToggle}
                       disabled={likeLoading}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors ${
-                        isLikedByUser
-                          ? 'bg-red-100 text-red-600 border border-red-200 hover:bg-red-200'
-                          : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
-                      }`}
+                      className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-200 ${
+                        isLiked
+                          ? 'bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-100'
+                          : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:bg-gray-100'
+                      } ${likeLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <svg
-                        className={`w-5 h-5 ${isLikedByUser ? 'text-red-500 fill-current' : 'text-gray-400'}`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        fill="none"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                      </svg>
-                      <span>{isLikedByUser ? 'Liked' : 'Like'}</span>
-                      {product.likes.length > 0 && (
-                        <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
-                          {product.likes.length}
+                      {likeLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-current border-t-transparent"></div>
+                      ) : (
+                        <svg
+                          className={`w-5 h-5 transition-colors ${
+                            isLiked ? 'text-red-500 fill-current' : 'text-gray-400'
+                          }`}
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          fill={isLiked ? "currentColor" : "none"}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        </svg>
+                      )}
+                      <span>{isLiked ? 'Liked' : 'Like'}</span>
+                      {likesCount > 0 && (
+                        <span className="bg-white text-gray-700 px-2 py-0.5 rounded-full text-xs border">
+                          {likesCount}
                         </span>
                       )}
                     </button>
 
+                    {/* Contact Button - Temporarily disabled */}
                     <button
-                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#FF4C4C] text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                      disabled
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-gray-300 text-gray-500 rounded-lg font-medium cursor-not-allowed"
                     >
                       <svg
                         className="w-5 h-5"
@@ -213,14 +307,14 @@ const ProductDetail = () => {
                           d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                         />
                       </svg>
-                      <span>Chat with Seller</span>
+                      <span>Chat with Seller (Coming Soon)</span>
                     </button>
-                  </>
-                )}
+                  {/* </>
+                )} */}
 
                 {isSeller && (
                   <button
-                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
                     onClick={() => navigate(`/edit-product/${product.slug}`)}
                   >
                     <svg
@@ -242,13 +336,18 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Product Description */}
-              <div className="border-t border-gray-200 pt-4">
-                <h2 className="text-lg font-semibold mb-2">Description</h2>
-                <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-line">
-                  {product.details}
+              {/* Product Stats */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{likesCount}</div>
+                  <div className="text-sm text-gray-500">Likes</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{product.views || 0}</div>
+                  <div className="text-sm text-gray-500">Views</div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -256,19 +355,52 @@ const ProductDetail = () => {
         {/* Product Tags */}
         {product.tags && product.tags.length > 0 && (
           <div className="bg-white rounded-lg shadow-md mt-6 p-6">
-            <h2 className="text-lg font-semibold mb-4">Tags</h2>
+            <h2 className="text-lg font-semibold mb-4 text-gray-900">Tags</h2>
             <div className="flex flex-wrap gap-2">
               {product.tags.map(tag => (
                 <span
                   key={tag._id}
-                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
                 >
-                  {tag.name}
+                  #{tag.name}
                 </span>
               ))}
             </div>
           </div>
         )}
+        <div className="bg-white rounded-lg shadow-md mt-6 p-6">
+            <h2 className="text-lg font-semibold mb-4 text-gray-900">Similar Products</h2>
+            <div className="flex flex-wrap gap-2">
+                <span
+                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
+                >
+                  #
+                </span>
+            </div>
+          </div>
+        {/* Back to Products Button */}
+        <div className="mt-8 text-center">
+          <Link
+            to="/products"
+            className="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Back to Products
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/oauth/callback" element={<OAuthCallback />} />
-              <Route path="/marketplace" element={<ProductList />} />
+              <Route path="/products" element={<ProductList />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route 
                 path="/profile" 

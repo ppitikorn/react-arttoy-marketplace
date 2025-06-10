@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import BrandSelect from '../../components/form/BrandSelect';
 import TagsSelect from '../../components/form/TagsSelect';
@@ -42,6 +43,7 @@ export default function PostProduct() {
   const [isLoading, setIsLoading] = useState(false);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [images, setImages] = useState([]);
+  const navigate = useNavigate();
   // const [error, setError] = useState('');
   // const [price, setPrice] = useState("");
 
@@ -135,6 +137,7 @@ export default function PostProduct() {
       
       console.log('Product created:', response.data);
       message.success('Product created successfully');
+      navigate('/products'); // Redirect to product list or detail page
       form.resetFields();
       setImages([]);
       setPreviewUrls([]);

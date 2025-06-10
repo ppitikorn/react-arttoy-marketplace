@@ -24,7 +24,7 @@ const OAuthCallback = () => {
         try {
           const res = await axios.get('http://localhost:5000/api/auth/me');
           setUser(res.data.user);
-          navigate('/marketplace'); // Redirect to marketplace after successful auth
+          navigate('/'); 
         } catch (error) {
           console.error('Error fetching user:', error);
           navigate('/login'); // Redirect to login if there's an error

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateJWT } = require('../middleware/auth');
 const Product = require('../models/Product');
+const User = require('../models/User');
 const { uploadProduct } = require('../middleware/uploadMiddleware'); // Import the upload middleware
 const slugify = require('slugify');
 const { v4: uuidv4 } = require('uuid');
@@ -81,7 +82,7 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const product = await Product.findOne({ slug }).populate('seller', 'avatar username name emailVerified');
+    const product = await Product.findOne({ slug }).populate('seller', 'avatar username name emailVerified').populate('tags', 'name'); // Populate seller and tags info
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -93,5 +94,74 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
+// Toggle like/unlike product
+router.post('/:slug/like', authenticateJWT, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user._id;
+    console.log('User ID:', userId);
+
+    const product = await Product.findOne({ slug });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Check if user already liked the product
+    const isLiked = product.likes.includes(userId);
+
+    if (isLiked) {
+      // Unlike: Remove user from product's likes array
+      product.likes = product.likes.filter(id => id.toString() !== userId.toString());
+      
+      // Also remove product from user's liked products (if you implement User model update)
+      await User.findByIdAndUpdate(userId, {
+        $pull: { likedProducts: product._id }
+      });
+    } else {
+      // Like: Add user to product's likes array
+      product.likes.push(userId);
+      
+      // Also add product to user's liked products (if you implement User model update)
+      await User.findByIdAndUpdate(userId, {
+        $addToSet: { likedProducts: product._id }
+      });
+    }
+
+    await product.save();
+
+    res.json({
+      success: true,
+      isLiked: !isLiked,
+      likesCount: product.likes.length,
+      message: isLiked ? 'Product unliked' : 'Product liked'
+    });
+  } catch (error) {
+    console.error('Like toggle error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get like status for a product (optional - for checking current state)
+router.get('/:slug/like-status', authenticateJWT, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user._id;
+
+    const product = await Product.findOne({ slug });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const isLiked = product.likes.includes(userId);
+
+    res.json({
+      isLiked,
+      likesCount: product.likes.length
+    });
+  } catch (error) {
+    console.error('Get like status error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 module.exports = router;
