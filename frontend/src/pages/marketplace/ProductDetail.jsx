@@ -38,7 +38,7 @@ const ProductDetail = () => {
 
       if (response.data.success) {
         setViewsCount(response.data.viewsCount);
-        console.log(response.data.message);
+        //console.log(response.data.message);
       }
     } catch (error) {
       console.error('Error tracking view:', error);
@@ -54,7 +54,7 @@ const ProductDetail = () => {
         });
         setIsLiked(response.data.isLiked);
         setLikesCount(response.data.likesCount);
-        console.log('Fetched like status:', response.data);
+        //console.log('Fetched like status:', response.data);
       } catch (error) {
         console.error('Error fetching like status:', error);
       }
@@ -68,7 +68,6 @@ const ProductDetail = () => {
         const response = await axios.get(`http://localhost:5000/api/products/${slug}`);
         setProduct(response.data);
         setViewsCount(response.data.views || 0);
-        console.log('Fetched product details:', response.data);
         
         // Track view after product is loaded
         setTimeout(() => trackView(), 1000); // Delay to ensure page is actually viewed
@@ -125,7 +124,6 @@ const ProductDetail = () => {
           : prev.likes.filter(id => id !== user._id)
       }));
       fetchLikeStatus(); // Refresh like status
-      console.log(response.data.message);
     } catch (error) {
       // Revert optimistic update on error
       setProduct(prev => ({
@@ -170,9 +168,9 @@ const ProductDetail = () => {
       </div>
     );
   }
-  if (user.likesProducts && user.likesProducts.includes(product._id)) {
-    console.log('User has liked this product');
-  }
+  // if (user.likesProducts && user.likesProducts.includes(product._id)) {
+  //   console.log('User has liked this product');
+  // }
   const isSeller = user && user.id === product.seller._id;
 
   return (
@@ -350,7 +348,7 @@ const ProductDetail = () => {
                 {isSeller && (
                   <button
                     className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
-                    onClick={() => navigate(`/edit-product/${product.slug}`)}
+                    onClick={() => navigate(`/products/edit/${product.slug}`)}
                   >
                     <svg
                       className="w-5 h-5"

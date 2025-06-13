@@ -15,6 +15,7 @@ import AdminProducts from './pages/admin/AdminProduct';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminLayout from './components/layout/AdminLayout';
 import AdminTags from './pages/admin/AdminTags';
+import ProductEdit from './pages/marketplace/ProductEdit';
 
 import './App.css';
 function App() {
@@ -29,6 +30,7 @@ function App() {
               <Route path="/oauth/callback" element={<OAuthCallback />} />
               <Route path="/products" element={<ProductList />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
+              <Route path="/products/edit/:slug" element={<ProductEdit />} />
               <Route 
                 path="/profile" 
                 element={

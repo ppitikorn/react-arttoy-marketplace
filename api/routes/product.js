@@ -7,7 +7,57 @@ const ProductView = require('../models/ProductView'); // Import the ProductView 
 const { uploadProduct } = require('../middleware/uploadMiddleware'); // Import the upload middleware
 const slugify = require('slugify');
 const { v4: uuidv4 } = require('uuid');
+const { cloudinary } = require('../config/cloudinaryConfig'); // Import Cloudinary config
 
+// Helper function to extract public ID from Cloudinary URL
+const extractPublicId = (cloudinaryUrl) => {
+  try {
+    // Extract public ID from Cloudinary URL
+    // URL format: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/filename.ext
+    const parts = cloudinaryUrl.split('/');
+    const uploadIndex = parts.indexOf('upload');
+    if (uploadIndex !== -1 && uploadIndex < parts.length - 1) {
+      // Get everything after 'upload/v1234567890/' or 'upload/'
+      let publicIdParts = parts.slice(uploadIndex + 1);
+      // Remove version number if present (starts with 'v' followed by numbers)
+      if (publicIdParts[0] && publicIdParts[0].match(/^v\d+$/)) {
+        publicIdParts = publicIdParts.slice(1);
+      }
+      // Join remaining parts and remove file extension
+      const publicIdWithExt = publicIdParts.join('/');
+      const publicId = publicIdWithExt.replace(/\.[^/.]+$/, ''); // Remove extension
+      return publicId;
+    }
+  } catch (error) {
+    console.error('Error extracting public ID from URL:', cloudinaryUrl, error);
+  }
+  return null;
+};
+
+// Helper function to delete images from Cloudinary
+const deleteCloudinaryImages = async (imageUrls) => {
+  const deletionResults = [];
+  
+  for (const imageUrl of imageUrls) {
+    try {
+      const publicId = extractPublicId(imageUrl);
+      if (publicId) {
+        console.log(`Attempting to delete image with public ID: ${publicId}`);
+        const result = await cloudinary.uploader.destroy(publicId);
+        console.log(`Cloudinary deletion result for ${publicId}:`, result);
+        deletionResults.push({ url: imageUrl, publicId, result });
+      } else {
+        console.warn(`Could not extract public ID from URL: ${imageUrl}`);
+        deletionResults.push({ url: imageUrl, publicId: null, result: 'failed_to_extract_id' });
+      }
+    } catch (error) {
+      console.error(`Error deleting image ${imageUrl} from Cloudinary:`, error);
+      deletionResults.push({ url: imageUrl, error: error.message });
+    }
+  }
+  
+  return deletionResults;
+};
 
 // Create a new product
 // NEED TO ORGANIZE THIS ROUTE
@@ -83,7 +133,7 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const product = await Product.findOne({ slug }).populate('seller', 'avatar username name emailVerified').populate('tags', 'name'); // Populate seller and tags info
+    const product = await Product.findOne({ slug }).populate('seller', 'avatar username name emailVerified').populate('tags', 'name').populate('brand', 'name'); // Populate seller and tags info
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -92,6 +142,157 @@ router.get('/:slug', async (req, res) => {
   } catch (error) {
     console.error('Error fetching product by slug:', error);
     res.status(500).json({ message: 'Failed to fetch product' });
+  }
+});
+// Update a product by slug
+router.put('/:slug', authenticateJWT, uploadProduct.array('newImages', 5), async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { 
+      title, 
+      price, 
+      category, 
+      brand, 
+      details, 
+      condition, 
+      rarity, 
+      tags, 
+      existingImages, 
+      imagesToDelete 
+    } = req.body;
+    const userId = req.user._id;
+    
+    const product = await Product.findOne({ slug });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Check if user is the seller
+    if (!product.seller.equals(userId)) {
+      console.log('Unauthorized access attempt by user:', userId);
+      console.log('Product seller ID:', product.seller);
+      return res.status(403).json({ message: 'Unauthorized access' });
+    }
+
+    // Update product fields
+    product.title = title;
+    product.price = price;
+    product.category = category;
+    product.brand = brand;
+    product.details = details;
+    product.condition = condition;
+    product.rarity = rarity;
+    
+    // Handle tags (ensure it's an array)
+    if (tags) {
+      product.tags = Array.isArray(tags) ? tags : [tags];
+    }    // Handle image updates
+    let updatedImages = [];
+    const imagesToDeleteArray = imagesToDelete ? (Array.isArray(imagesToDelete) ? imagesToDelete : [imagesToDelete]) : [];
+    
+    // Delete images from Cloudinary if there are any marked for deletion
+    if (imagesToDeleteArray.length > 0) {
+      console.log('Deleting images from Cloudinary:', imagesToDeleteArray);
+      try {
+        const deletionResults = await deleteCloudinaryImages(imagesToDeleteArray);
+        console.log('Cloudinary deletion results:', deletionResults);
+      } catch (error) {
+        console.error('Error deleting images from Cloudinary:', error);
+        // Continue with the update even if image deletion fails
+      }
+    }
+    
+    // Add existing images that are not marked for deletion
+    if (existingImages) {
+      const existingImagesArray = Array.isArray(existingImages) ? existingImages : [existingImages];
+      updatedImages = existingImagesArray.filter(img => !imagesToDeleteArray.includes(img));
+    }
+    
+    // Add new uploaded images
+    if (req.files && req.files.length > 0) {
+      const newImageUrls = req.files.map(file => file.path);
+      updatedImages = [...updatedImages, ...newImageUrls];
+    }
+    
+    // Ensure at least one image exists
+    if (updatedImages.length === 0) {
+      return res.status(400).json({ message: 'At least one image is required' });
+    }
+    
+    // Limit to maximum 4 images
+    if (updatedImages.length > 4) {
+      return res.status(400).json({ message: 'Maximum 4 images allowed' });
+    }
+    
+    product.images = updatedImages;
+
+    await product.save();
+    
+    // Populate the response with complete data
+    const updatedProduct = await Product.findOne({ slug })
+      .populate('seller', 'avatar username name emailVerified')
+      .populate('tags', 'name')
+      .populate('brand', 'name');
+    
+    res.status(200).json({ 
+      message: 'Product updated successfully', 
+      product: updatedProduct 
+    });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ 
+      message: 'Failed to update product',
+      error: error.message 
+    });
+  }
+});
+
+// Delete a product by slug
+router.delete('/:slug', authenticateJWT, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user._id;
+    
+    const product = await Product.findOne({ slug });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Check if user is the seller
+    if (!product.seller.equals(userId)) {
+      console.log('Unauthorized delete attempt by user:', userId);
+      console.log('Product seller ID:', product.seller);
+      return res.status(403).json({ message: 'Unauthorized access' });
+    }
+
+    // Delete all product images from Cloudinary
+    if (product.images && product.images.length > 0) {
+      console.log('Deleting all product images from Cloudinary:', product.images);
+      try {
+        const deletionResults = await deleteCloudinaryImages(product.images);
+        console.log('Cloudinary deletion results:', deletionResults);
+      } catch (error) {
+        console.error('Error deleting product images from Cloudinary:', error);
+        // Continue with product deletion even if image deletion fails
+      }
+    }
+
+    // Delete the product from database
+    await Product.findOneAndDelete({ slug });
+    
+    res.status(200).json({ 
+      message: 'Product deleted successfully',
+      deletedProduct: {
+        title: product.title,
+        slug: product.slug
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ 
+      message: 'Failed to delete product',
+      error: error.message 
+    });
   }
 });
 

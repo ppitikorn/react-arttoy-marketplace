@@ -167,6 +167,7 @@ const BrandCascader = ({ apiData, onChange, value }) => {
             options={options}
             value={selectedValue}
             onChange={handleChange}
+            defaultValue={selectedValue}
             placeholder="Please select brand"
             style={{ width: '100%' }}
             changeOnSelect
@@ -174,10 +175,11 @@ const BrandCascader = ({ apiData, onChange, value }) => {
     );
 };
 
-const BrandSelect = ({ onChange, brands }) => (
+const BrandSelect = ({ onChange, brands, value }) => (
     <BrandCascader
         apiData={brands}
         onChange={onChange}
+        value={value}
     />
 );
 
