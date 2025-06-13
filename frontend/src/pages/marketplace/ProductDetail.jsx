@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import ReportButton from '../../components/common/ReportButton';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -342,6 +343,11 @@ const ProductDetail = () => {
                       </svg>
                       <span>Chat with Seller (Coming Soon)</span>
                     </button>
+                    {/* Report Button */}
+                    <ReportButton
+                      productId={product._id}
+                      productTitle={product.title}
+                    />
                   {/* </>
                 )} */}
 

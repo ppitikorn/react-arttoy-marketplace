@@ -23,6 +23,7 @@ const adminRoutes = require('./routes/admin');
 const tagRoutes = require('./routes/tags');
 const brandRoutes = require('./routes/brand');
 const productRoutes = require('./routes/product');
+const reportRoutes = require('./routes/report');
 const { authenticateJWT, isAdmin } = require('./middleware/auth');
 
 
@@ -32,6 +33,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/brand', brandRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Connect to MongoDB
 const PORT = process.env.PORT || 5000;

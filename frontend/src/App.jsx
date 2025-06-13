@@ -16,7 +16,8 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminLayout from './components/layout/AdminLayout';
 import AdminTags from './pages/admin/AdminTags';
 import ProductEdit from './pages/marketplace/ProductEdit';
-
+import AdminReport from './pages/admin/AdminReport';
+import AdminReport2 from './pages/admin/AdminReport2';
 import './App.css';
 function App() {
   return (
@@ -61,6 +62,9 @@ function App() {
                 <Route path="brands" element={<AdminBrands />} />
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="tags" element={<AdminTags />} />
+                <Route path="reports" element={<AdminReport />} />
+                <Route path="reports2" element={<AdminReport2 />} />
+
               </Route>
             </Routes>
           </Layout>
