@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Profile from './pages/profile/Profile';
+import Seller from './pages/profile/Seller';
 import ProductList from './pages/marketplace/ProductList';
 import ProductDetail from './pages/marketplace/ProductDetail';
 import PostProduct from './pages/marketplace/PostProduct';
@@ -32,6 +33,7 @@ function App() {
               <Route path="/products" element={<ProductList />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/products/edit/:slug" element={<ProductEdit />} />
+              <Route path="/profile/:username" element={<Seller />} />
               <Route 
                 path="/profile" 
                 element={

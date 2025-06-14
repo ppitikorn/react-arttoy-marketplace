@@ -26,7 +26,7 @@ function ProductCard({ product }) {
             
             {/* Seller info - always positioned after title */}
             <Link
-              to={`/seller/${product.seller.username}`}
+              to={`/profile/${product.seller.username}`}
               className="flex items-center gap-2 mt-2 hover:bg-gray-300 transition-transform rounded-lg p-2"
               onClick={(e) => e.stopPropagation()}
             >

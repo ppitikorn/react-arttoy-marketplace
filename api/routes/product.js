@@ -112,7 +112,7 @@ router.post('/', authenticateJWT, uploadProduct.array('images', 5), async (req, 
 // Get all products with optional filters
 router.get('/', async (req, res) => {
   try {
-    const { category, brand, tags , rarity} = req.query;
+    const { category, brand, tags, rarity, seller } = req.query;
 
     // Build the filter object
     const filter = {};
@@ -120,6 +120,16 @@ router.get('/', async (req, res) => {
     if (brand) filter.brand = brand;
     if (tags) filter.tags = { $in: tags.split(',') };
     if (rarity) filter.rarity = rarity;
+    
+    // Filter by seller username
+    if (seller) {
+      const sellerUser = await User.findOne({ username: seller });
+      if (sellerUser) {
+        filter.seller = sellerUser._id;
+      } else {
+        return res.status(200).json([]); // Return empty array if seller not found
+      }
+    }
 
     const products = await Product.find(filter).populate('seller', 'avatar username name emailVerified'); // Populate seller info
     res.status(200).json(products);
@@ -244,6 +254,35 @@ router.put('/:slug', authenticateJWT, uploadProduct.array('newImages', 5), async
       message: 'Failed to update product',
       error: error.message 
     });
+  }
+});
+
+// Patch product mark as sold
+router.patch('/:slug/sold', authenticateJWT, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user._id;
+
+
+    const product = await Product.findOne({ slug });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Check if user is the seller
+    if (!product.seller.equals(userId)) {
+      console.log('Unauthorized access attempt by user:', userId);
+      console.log('Product seller ID:', product.seller);
+      return res.status(403).json({ message: 'Unauthorized access' });
+    }
+    const currentIsSold = product.isSold;
+    product.isSold = !currentIsSold; // Toggle isSold status
+    await product.save();
+
+    res.status(200).json({ message: 'Product marked as sold', product });
+  } catch (error) {
+    console.error('Error marking product as sold:', error);
+    res.status(500).json({ message: 'Failed to mark product as sold', error: error.message });
   }
 });
 

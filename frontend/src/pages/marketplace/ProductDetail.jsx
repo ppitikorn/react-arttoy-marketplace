@@ -14,6 +14,7 @@ const ProductDetail = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [viewsCount, setViewsCount] = useState(0);
+  const [isSeller, setIsSeller] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -46,7 +47,6 @@ const ProductDetail = () => {
       // Don't show error to user, view tracking is background operation
     }
   };
-
   const fetchLikeStatus = async () => {
     if (user && slug) {
       try {
@@ -61,9 +61,7 @@ const ProductDetail = () => {
       }
     }
   };
-
-  useEffect(() => {
-    const fetchProductDetails = async () => {
+  const fetchProductDetails = async () => {
       try {
         setLoading(true);
         const response = await axios.get(`http://localhost:5000/api/products/${slug}`);
@@ -80,17 +78,67 @@ const ProductDetail = () => {
         setLoading(false);
       }
     };
+  const checkUserRole = () => {
+    if (!product || !product.seller) {
+      // console.log('Product or seller data not available yet');
+      setIsSeller(false);
+      return;
+    }
 
+    // Check if user is logged in
+    if (!user) {
+      // console.log('=== USER ROLE: GUEST ===');
+      // console.log('User is not logged in');
+      setIsSeller(false);
+      return;
+    }
+
+    // Get user ID (handle both possible formats: user.id or user._id)
+    const userId = user.id || user._id;
+    const sellerId = product.seller._id || product.seller.id;
+
+    // console.log('=== USER ROLE CHECK ===');
+    // console.log('Current user:', user);
+    // console.log('User ID:', userId);
+    // console.log('Seller ID:', sellerId);
+
+    // Check if current user is the seller
+    if (userId === sellerId) {
+      //console.log('=== USER ROLE: SELLER ===');
+      //console.log('User is the owner of this product');
+      setIsSeller(true);
+    } else {
+      //console.log('=== USER ROLE: REGULAR USER ===');
+      //console.log('User is logged in but not the owner');
+      setIsSeller(false);
+    }
+      //console.log('isSeller state will be set to:', userId === sellerId);
+  };
+
+  useEffect(() => {
     if (slug) {
       fetchProductDetails();
       fetchLikeStatus();
     }
   }, [slug]);
 
-  // Like toggle function (keep existing)
+  useEffect(() => {
+    if (product) {
+      checkUserRole();
+    }
+  }, [user, product]);
+
   const handleLikeToggle = async () => {
+    // Check if user is logged in
     if (!user) {
       alert('Please login to like products');
+      navigate('/login');
+      return;
+    }
+
+    // Prevent sellers from liking their own products
+    if (isSeller) {
+      alert('You cannot like your own product');
       return;
     }
 
@@ -138,6 +186,42 @@ const ProductDetail = () => {
       setLikeLoading(false);
     }
   };
+  const handleMarkAsSold = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+
+    const value = e.target.value;
+    console.log('Marking as sold:', value);
+    console.log('product.isSold:', product.isSold);
+    setLoading(true);
+
+    if (!isSeller) {
+      alert('Only the seller can mark this product as sold');
+      return;
+    }
+    //axios patch request to mark product as sold
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.patch(
+        `http://localhost:5000/api/products/${product.slug}/sold`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setProduct(prev => ({
+        ...prev,
+        isSold: true
+      }));
+      alert(`Set as ${value}`);
+    } catch (error) {
+      console.error('Error marking product as sold:', error);
+      alert('Failed to mark product as sold');
+    } finally {
+      setLoading(false);
+      fetchProductDetails(); // Refresh product details
+    }
+  };
 
   if (loading) {
     return (
@@ -167,13 +251,8 @@ const ProductDetail = () => {
           Back to Products
         </Link>
       </div>
-    );
-  }
-  // if (user.likesProducts && user.likesProducts.includes(product._id)) {
-  //   console.log('User has liked this product');
-  // }
-  const isSeller = user && user.id === product.seller._id;
-
+    );  }
+  
   return (
     <div className="min-h-screen bg-[#f0f2f5] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -225,7 +304,7 @@ const ProductDetail = () => {
             {/* Product Details */}
             <div className="space-y-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{product.title}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 flex">{product.title}</h1>
                 <div className="flex items-center mt-2 flex-wrap gap-2">
                   <span className={`px-3 py-1 text-sm rounded-full ${
                     product.rarity === 'Limited' ? 'bg-red-100 text-red-600' :
@@ -250,13 +329,13 @@ const ProductDetail = () => {
 
               {/* Seller Information */}
               <div className="border-t border-b border-gray-200 py-4">
-                <h2 className="text-lg font-semibold mb-2">Seller</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Seller</h2>
                 <Link
                   to={`/profile/${product.seller.username}`}
                   className="flex items-center gap-3 p-3 hover:bg-gray-300 rounded-lg transition-colors"
                 >
                   <img
-                    src={product.seller.avatar || 'https://via.placeholder.com/50'}
+                    src={product.seller.avatar || 'https://placehold.co/400'}
                     alt={product.seller.name}
                     className="w-12 h-12 rounded-full border border-gray-300"
                   />
@@ -282,8 +361,8 @@ const ProductDetail = () => {
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                {/* {!isSeller && (
-                  <> */}
+                {!isSeller && (
+                  <>
                     {/* Like Button */}
                     <button
                       onClick={handleLikeToggle}
@@ -321,7 +400,6 @@ const ProductDetail = () => {
                         </span>
                       )}
                     </button>
-
                     {/* Contact Button - Temporarily disabled */}
                     <button
                       disabled
@@ -343,25 +421,20 @@ const ProductDetail = () => {
                       </svg>
                       <span>Chat with Seller (Coming Soon)</span>
                     </button>
-                    {/* Report Button */}
-                    <ReportButton
-                      productId={product._id}
-                      productTitle={product.title}
-                    />
-                  {/* </>
-                )} */}
-
+                  </>
+                )}
                 {isSeller && (
-                  <button
-                    className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
-                    onClick={() => navigate(`/products/edit/${product.slug}`)}
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
+                  <div className="mt-4">
+                    <button
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                      onClick={() => navigate(`/products/edit/${product.slug}`)}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
                     >
                       <path
                         strokeLinecap="round"
@@ -372,20 +445,32 @@ const ProductDetail = () => {
                     </svg>
                     <span>Edit Product</span>
                   </button>
+                    <button
+                      className={`w-full flex items-center justify-center gap-2 py-3 ${product.isSold ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg font-medium  transition-colors mt-2`}
+                      onClick={handleMarkAsSold}
+                      value={product.isSold ? 'available' : 'sold'}
+                    >
+                      {/* <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-3-3v6m8.485-10.485a9 9 0 11-12.728 12.728A9 9 0 0118.485 4.515z"
+                        />
+                      </svg> */}
+                      <span>{product.isSold ? '✅Set as Available' : '❌Set as Sold'}</span>
+                    </button>
+                </div>
                 )}
               </div>
-
-              {/* Product Stats */}
-              {/* <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">{likesCount}</div>
-                  <div className="text-sm text-gray-500">Likes</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">{product.views || 0}</div>
-                  <div className="text-sm text-gray-500">Views</div>
-                </div>
-              </div> */}
+              {/* Report Button */}
+              {!isSeller && <ReportButton productId={product._id} productTitle={product.title}/>}
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">{likesCount}</div>

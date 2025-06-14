@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await axios.get('http://localhost:5000/api/auth/me');
       setUser(res.data.user);
-      console.log('User fetched:', res.data.user);
+      //console.log('User fetched:', res.data.user);
     } catch (error) {
       console.error('Error fetching user:', error);
       localStorage.removeItem('token');

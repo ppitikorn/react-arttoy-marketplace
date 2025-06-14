@@ -33,10 +33,28 @@ const userSchema = new mongoose.Schema({
       return this.oauthProviders.length === 0;
     },
     select: false // Don't include password in queries by default
-  },
-  emailVerified: {
+  },  emailVerified: {
     type: Boolean,
     default: false
+  },
+  emailVerificationOTP: {
+    code: {
+      type: String,
+      select: false // Don't include in queries by default
+    },
+    sentAt: {
+      type: Date,
+      select: false
+    },
+    expiresAt: {
+      type: Date,
+      select: false
+    },
+    attempts: {
+      type: Number,
+      default: 0,
+      select: false
+    }
   },
   bio: {
     type: String,

@@ -12,6 +12,18 @@ const Profile = () => {
   const { user, setUser } = useAuth();
   const [previewUrl, setPreviewUrl] = useState(null);
   const [originalValues, setOriginalValues] = useState(null);
+  
+  // OTP verification states
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [verificationStatus, setVerificationStatus] = useState({
+    emailVerified: false,
+    canRequestNew: true,
+    attemptsLeft: 5,
+    otpExpired: true
+  });
 
   const formik = useFormik({
     initialValues: {
@@ -86,12 +98,20 @@ const Profile = () => {
       console.log('Preview URL:', url);
     }
   };
-
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/profile')
-        const profileData = response.data;
+        const token = localStorage.getItem('token');
+        const [profileResponse, statusResponse] = await Promise.all([
+          axios.get('http://localhost:5000/api/profile', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:5000/api/profile/verification-status', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+        
+        const profileData = profileResponse.data;
         console.log('Profile data fetched:', profileData);
         
         formik.setValues({
@@ -104,6 +124,7 @@ const Profile = () => {
         });
         
         setPreviewUrl(profileData.avatar || '');
+        setVerificationStatus(statusResponse.data);
         setLoading(false);
       } catch (err) {
         console.error('Fetch error:', err);
@@ -114,16 +135,72 @@ const Profile = () => {
 
     fetchProfile();
   }, []);
-
   const handleVerifyEmail = async () => {
     try {
-      await axios.post('http://localhost:5000/api/profile/verify-email');
-      // OTP verification logic can be added here
-      //setUser({ ...user, emailVerified: true });
-      console.log('Verification email sent');
+      setOtpLoading(true);
+      setOtpError('');
+      
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:5000/api/profile/verify-email', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('Verification email sent:', response.data.message);
+      setShowOTPModal(true);
+      
+      // Update verification status
+      const statusResponse = await axios.get('http://localhost:5000/api/profile/verification-status', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setVerificationStatus(statusResponse.data);
+      
     } catch (err) {
-      setError('Failed to send verification email');
+      console.error('Error sending verification email:', err);
+      setOtpError(err.response?.data?.message || 'Failed to send verification email');
+    } finally {
+      setOtpLoading(false);
     }
+  };
+
+  const handleVerifyOTP = async () => {
+    try {
+      setOtpLoading(true);
+      setOtpError('');
+      
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:5000/api/profile/verify-email-otp', 
+        { otp }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      console.log('Email verified successfully:', response.data.message);
+      
+      // Update user state and form values
+      setUser({ ...user, emailVerified: true });
+      formik.setFieldValue('emailVerified', true);
+      
+      // Update verification status
+      setVerificationStatus({
+        ...verificationStatus,
+        emailVerified: true
+      });
+      
+      setShowOTPModal(false);
+      setOtp('');
+      setError('');
+      
+    } catch (err) {
+      console.error('Error verifying OTP:', err);
+      setOtpError(err.response?.data?.message || 'Failed to verify OTP');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleCloseOTPModal = () => {
+    setShowOTPModal(false);
+    setOtp('');
+    setOtpError('');
   };
 
   const handleStartEditing = () => {
@@ -198,28 +275,43 @@ const Profile = () => {
                 )}
               </div>
             </div>
-            
-            {formik.values.emailVerified ? <div className="mt-6 bg-green-900/50 border border-green-700 rounded-md p-4">
+              {verificationStatus.emailVerified ? (
+              <div className="mt-6 bg-green-900/50 border border-green-700 rounded-md p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-green-500">
+                  <p className="text-sm text-green-500 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
                     Email verified successfully 
                   </p>
                 </div>
-              </div> :
+              </div>
+            ) : (
               <div className="mt-6 bg-yellow-900/50 border border-yellow-700 rounded-md p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-yellow-500">
-                    Please verify your email address
-                  </p>
+                  <div>
+                    <p className="text-sm text-yellow-500">
+                      Please verify your email address
+                    </p>
+                    {!verificationStatus.canRequestNew && (
+                      <p className="text-xs text-yellow-400 mt-1">
+                        Attempts remaining: {verificationStatus.attemptsLeft}
+                      </p>
+                    )}
+                  </div>
                   <button
                     onClick={handleVerifyEmail}
-                    className="text-sm text-yellow-500 hover:text-yellow-400 font-medium"
+                    disabled={otpLoading || !verificationStatus.canRequestNew}
+                    className="text-sm text-yellow-500 hover:text-yellow-400 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Verify Now
+                    {otpLoading ? 'Sending...' : 'Verify Now'}
                   </button>
                 </div>
+                {otpError && (
+                  <p className="text-xs text-red-400 mt-2">{otpError}</p>
+                )}
               </div>
-              }
+            )}
 
             <form onSubmit={formik.handleSubmit} className="mt-6 space-y-6">
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -327,10 +419,87 @@ const Profile = () => {
                   </button>
                 )}
               </div>
-            </form>
-          </div>
+            </form>          </div>
         </div>
       </div>
+
+      {/* OTP Verification Modal */}
+      {showOTPModal && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-white mb-4">
+                Email Verification
+              </h3>
+              <p className="text-gray-300 text-sm mb-6">
+                We've sent a 6-digit verification code to your email address. 
+                Please enter it below to verify your account.
+              </p>
+
+              {otpError && (
+                <div className="mb-4 bg-red-500/10 border border-red-500 text-red-500 px-3 py-2 rounded text-sm">
+                  {otpError}
+                </div>
+              )}
+
+              <div className="mb-6">
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-300 mb-2">
+                  Verification Code
+                </label>
+                <input
+                  type="text"
+                  id="otp"
+                  value={otp}
+                  onChange={(e) => {
+                    // Only allow digits and limit to 6 characters
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtp(value);
+                  }}
+                  placeholder="Enter 6-digit code"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={6}
+                  autoComplete="off"
+                />
+                <p className="text-xs text-gray-400 mt-2">
+                  Code expires in 10 minutes
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleCloseOTPModal}
+                  disabled={otpLoading}
+                  className="flex-1 px-4 py-2 border border-gray-600 rounded-md text-gray-300 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleVerifyOTP}
+                  disabled={otpLoading || otp.length !== 6}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {otpLoading ? 'Verifying...' : 'Verify'}
+                </button>
+              </div>
+
+              <div className="mt-4 text-center">
+                <button
+                  onClick={handleVerifyEmail}
+                  disabled={otpLoading || !verificationStatus.canRequestNew}
+                  className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Didn't receive code? Resend
+                </button>
+                {!verificationStatus.canRequestNew && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Attempts remaining: {verificationStatus.attemptsLeft}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
