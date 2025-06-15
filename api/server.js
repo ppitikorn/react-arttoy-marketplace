@@ -8,7 +8,10 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Adjust as needed
+    credentials: true // Allow credentials if needed
+}));
 app.use(express.json());
 app.use(passport.initialize());
 
