@@ -3,6 +3,7 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/api.js';
 
 
 const Profile = () => {
@@ -68,7 +69,7 @@ const Profile = () => {
         }
         console.log('Form data:', formData);
 
-        const response = await axios.put('http://localhost:5000/api/profile', formData, {
+        const response = await api.put('/api/profile', formData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
@@ -101,14 +102,9 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
         const [profileResponse, statusResponse] = await Promise.all([
-          axios.get('http://localhost:5000/api/profile', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:5000/api/profile/verification-status', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          api.get('/api/profile'),
+          api.get('/api/profile/verification-status')
         ]);
         
         const profileData = profileResponse.data;
@@ -139,19 +135,13 @@ const Profile = () => {
     try {
       setOtpLoading(true);
       setOtpError('');
-      
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/profile/verify-email', {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+
+      const response = await api.post('/api/profile/verify-email');
       console.log('Verification email sent:', response.data.message);
       setShowOTPModal(true);
       
       // Update verification status
-      const statusResponse = await axios.get('http://localhost:5000/api/profile/verification-status', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const statusResponse = await api.get('/api/profile/verification-status');
       setVerificationStatus(statusResponse.data);
       
     } catch (err) {
@@ -166,11 +156,9 @@ const Profile = () => {
     try {
       setOtpLoading(true);
       setOtpError('');
-      
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/profile/verify-email-otp', 
-        { otp }, 
-        { headers: { Authorization: `Bearer ${token}` } }
+
+      const response = await api.post('/api/profile/verify-email-otp', 
+        { otp }
       );
       
       console.log('Email verified successfully:', response.data.message);

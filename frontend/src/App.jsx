@@ -32,33 +32,11 @@ function App() {
               <Route path="/oauth/callback" element={<OAuthCallback />} />
               <Route path="/products" element={<ProductList />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
-              <Route path="/products/edit/:slug" element={<ProductEdit />} />
               <Route path="/profile/:username" element={<Seller />} />
-              <Route 
-                path="/profile" 
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/post-product" 
-                element={
-                  <ProtectedRoute>
-                    <PostProduct />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* <Route 
-                path="/chat/:sellerId" 
-                element={
-                  <ProtectedRoute>
-                    <ChatPage />
-                  </ProtectedRoute>
-                } 
-              /> */}
-
+              <Route path="/products/edit/:slug" element={<ProtectedRoute><ProductEdit /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/post-product" element={<ProtectedRoute><PostProduct /></ProtectedRoute>} />
+              
               <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminLayout /></ProtectedRoute>}>
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="brands" element={<AdminBrands />} />

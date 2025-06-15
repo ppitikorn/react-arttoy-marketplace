@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Table, Button, Input, Modal, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/api';
 
 function AdminTags() {
     const [tags, setTags] = useState([]);
@@ -20,9 +21,7 @@ function AdminTags() {
     
     const fetchTags = async () => {
         try {
-        const response = await axios.get('http://localhost:5000/api/admin/tags', {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get('/api/admin/tags');
         console.log(response.data);
         setTags(response.data);
         } catch (error) {
@@ -33,14 +32,10 @@ function AdminTags() {
     const handleCreateOrUpdateTag = async () => {
         try {
         if (editingTag) {
-            await axios.put(`http://localhost:5000/api/admin/tags/${editingTag._id}`, { name: newTag }, {
-            headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.put(`/api/admin/tags/${editingTag._id}`, { name: newTag });
             message.success('Tag updated successfully');
         } else {
-            await axios.post('http://localhost:5000/api/admin/tags', { name: newTag }, {
-            headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.post('/api/admin/tags', { name: newTag });
             message.success('Tag created successfully');
         }
         setNewTag('');
@@ -54,9 +49,7 @@ function AdminTags() {
     
     const handleDeleteTag = async (id) => {
         try {
-        await axios.delete(`http://localhost:5000/api/admin/tags/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.delete(`/api/admin/tags/${id}`);
         message.success('Tag deleted successfully');
         fetchTags();
         } catch (error) {

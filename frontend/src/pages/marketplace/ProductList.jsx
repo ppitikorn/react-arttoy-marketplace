@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import ProductCard from '../../components/common/ProductCard';
+import api from '../../utils/api';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -30,7 +31,7 @@ const ProductList = () => {
       if (filters.rarity) queryParams.append('rarity', filters.rarity);
       if (filters.tags.length > 0) queryParams.append('tags', filters.tags.join(','));
 
-      const response = await axios.get(`http://localhost:5000/api/products?${queryParams}`);
+      const response = await api.get(`/api/products/published?${queryParams}`);
       setProducts(response.data);
       console.log('Fetched products:', response.data);
       console.log('Filters applied:', filters);

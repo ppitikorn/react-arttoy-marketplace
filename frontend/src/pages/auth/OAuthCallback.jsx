@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/api';
 
 const OAuthCallback = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const OAuthCallback = () => {
       // Fetch user info
       const fetchUser = async () => {
         try {
-          const res = await axios.get('http://localhost:5000/api/auth/me');
+          const res = await api.get('/api/auth/me');
           setUser(res.data.user);
           navigate('/'); 
         } catch (error) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import api from '../../utils/api';
 import BrandSelect from '../../components/form/BrandSelect';
 import TagsSelect from '../../components/form/TagsSelect';
 import { 
@@ -65,8 +66,8 @@ export default function PostProduct() {
   const fetchBrandsAndTags = async () => {
       try {
         const [BrandsRes, tagsRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/brand/'),
-          axios.get('http://localhost:5000/api/tags')
+          api.get('/api/brand/'),
+          api.get('/api/tags')
         ]);
         setBrands(BrandsRes.data);
         setAvailableTags(tagsRes.data);
@@ -128,7 +129,7 @@ export default function PostProduct() {
       }
       // Log the formDataToSend for debugging
       console.log('FormData to send:', formDataToSend);
-      const response = await axios.post('http://localhost:5000/api/products', formDataToSend, {
+      const response = await api.post('/api/products', formDataToSend, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -159,19 +160,6 @@ export default function PostProduct() {
       setIsLoading(false);
     }
   };
-
-  // const uploadImages = async (imageFiles) => {
-  //   const uploadPromises = imageFiles.map(async (file) => {
-  //     const formData = new FormData();
-  //     formData.append('image', file);
-  //     const response = await axios.post('/api/upload', formData);
-  //     return response.data.url;
-  //   });
-
-  //   return Promise.all(uploadPromises);
-  // };
-
-  // Add form values change handler
  
   const onValuesChange = (changedValues, allValues) => {
     setFormData(prev => ({

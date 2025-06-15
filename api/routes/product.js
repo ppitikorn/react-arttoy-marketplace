@@ -139,6 +139,36 @@ router.get('/', async (req, res) => {
   }
 });
 
+//Get products by isSold = false status = published // Add filter for published products
+router.get('/published', async (req, res) => {
+  try {
+    const { category, brand, tags, rarity, seller } = req.query;
+    // Build the filter object
+    const filter = {};
+    if (category) filter.category = category;
+    if (brand) filter.brand = brand;
+    if (tags) filter.tags = { $in: tags.split(',') };
+    if (rarity) filter.rarity = rarity;
+    
+    // Filter by seller username
+    if (seller) {
+      const sellerUser = await User.findOne({ username: seller });
+      if (sellerUser) {
+        filter.seller = sellerUser._id;
+      } else {
+        return res.status(200).json([]); // Return empty array if seller not found
+      }
+    }
+    const products = await Product.find({ isSold: false, status: 'Published', ...filter })
+      .populate('seller', 'avatar username name emailVerified');
+    res.status(200).json(products);
+  } catch (error) {
+    console.error('Error fetching published products:', error);
+    res.status(500).json({ message: 'Failed to fetch published products' });
+  }
+});
+
+
 // Get a single product by slug
 router.get('/:slug', async (req, res) => {
   try {

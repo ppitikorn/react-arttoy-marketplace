@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import ProductCard from '../../components/common/ProductCard';
+import api from '../../utils/api.js';
 
 const Seller = () => {
   const { username } = useParams();
@@ -36,7 +37,7 @@ const Seller = () => {
   const fetchSellerProfile = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/profile/user/${username}`);
+      const response = await api.get(`/api/profile/user/${username}`);
       console.log('Seller profile response:', response.data);
       setSeller(response.data);
     } catch (error) {
@@ -50,7 +51,7 @@ const Seller = () => {
   const fetchSellerProducts = async () => {
     try {
       setProductsLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/products?seller=${username}`);
+      const response = await api.get(`/api/products?seller=${username}`);
       setProducts(response.data);
       
       // Calculate stats
@@ -268,12 +269,7 @@ const Seller = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {products.map((product) => (
                   <div key={product._id} className="text-gray-800 relative">
-                    <ProductCard product={product} />
-                    {product.isSold && (
-                      <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                        SOLD
-                      </div>
-                    )}
+                    <ProductCard product={product} isSold={product.isSold} />
                   </div>
                 ))}
               </div>

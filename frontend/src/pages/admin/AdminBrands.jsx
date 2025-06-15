@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import api from '../../utils/api.js'; // Assuming you have a custom axios instance
 
 function AdminBrands() {
   const [brands, setBrands] = useState([]);
@@ -17,7 +18,7 @@ function AdminBrands() {
   const fetchBrands = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('http://localhost:5000/api/admin/brands/parent');
+      const response = await api.get('/api/admin/brands/parent');
       setBrands(response.data);
       setIsLoading(false);
     } catch (error) {
@@ -29,16 +30,10 @@ function AdminBrands() {
   const handleCreateBrand = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/admin/brands', 
+      await api.post('/api/admin/brands', 
         { 
           name: newBrand,
           parent: parentBrand
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
         });
       setNewBrand('');
       setParentBrand(selected => selected === "null" ? null : selected); 
@@ -50,14 +45,8 @@ function AdminBrands() {
 
   const handleUpdateBrand = async (id, newName) => {
     try {
-      await axios.put(`http://localhost:5000/api/admin/brands/${id}`,
-        { name: newName },
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
-        }
+      await api.put(`/api/admin/brands/${id}`,
+        { name: newName }
       );
       //setEditingBrand(null);
       fetchBrands();
@@ -68,14 +57,7 @@ function AdminBrands() {
   const handleDeleteBrand = async (id) => {
     if (window.confirm('Are you sure you want to delete this brand?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/brands/${id}`,
-          { 
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            } 
-          }
-        );
+        await api.delete(`/api/admin/brands/${id}`);
         fetchBrands();
       } catch (error) {
         setError(error.response?.data?.message || 'Failed to delete brand');

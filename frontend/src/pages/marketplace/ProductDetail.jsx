@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import ReportButton from '../../components/common/ReportButton';
+import api from '../../utils/api';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -31,7 +32,7 @@ const ProductDetail = () => {
   // Track product view
   const trackView = async () => {
     try {
-      const response = await axios.post(`http://localhost:5000/api/products/${slug}/view`, {
+      const response = await api.post(`/api/products/${slug}/view`, {
         userId: user?._id || null,
         sessionId: getSessionId(),
         userAgent: navigator.userAgent,
@@ -50,9 +51,7 @@ const ProductDetail = () => {
   const fetchLikeStatus = async () => {
     if (user && slug) {
       try {
-        const response = await axios.get(`http://localhost:5000/api/products/${slug}/like-status`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        const response = await api.get(`/api/products/${slug}/like-status`);
         setIsLiked(response.data.isLiked);
         setLikesCount(response.data.likesCount);
         //console.log('Fetched like status:', response.data);
@@ -64,7 +63,7 @@ const ProductDetail = () => {
   const fetchProductDetails = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/api/products/${slug}`);
+        const response = await api.get(`/api/products/${slug}`);
         setProduct(response.data);
         setViewsCount(response.data.views || 0);
         
@@ -80,39 +79,23 @@ const ProductDetail = () => {
     };
   const checkUserRole = () => {
     if (!product || !product.seller) {
-      // console.log('Product or seller data not available yet');
       setIsSeller(false);
       return;
     }
-
     // Check if user is logged in
     if (!user) {
-      // console.log('=== USER ROLE: GUEST ===');
-      // console.log('User is not logged in');
       setIsSeller(false);
       return;
     }
 
-    // Get user ID (handle both possible formats: user.id or user._id)
     const userId = user.id || user._id;
     const sellerId = product.seller._id || product.seller.id;
 
-    // console.log('=== USER ROLE CHECK ===');
-    // console.log('Current user:', user);
-    // console.log('User ID:', userId);
-    // console.log('Seller ID:', sellerId);
-
-    // Check if current user is the seller
     if (userId === sellerId) {
-      //console.log('=== USER ROLE: SELLER ===');
-      //console.log('User is the owner of this product');
       setIsSeller(true);
     } else {
-      //console.log('=== USER ROLE: REGULAR USER ===');
-      //console.log('User is logged in but not the owner');
       setIsSeller(false);
     }
-      //console.log('isSeller state will be set to:', userId === sellerId);
   };
 
   useEffect(() => {
@@ -156,15 +139,7 @@ const ProductDetail = () => {
     }));
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `http://localhost:5000/api/products/${slug}/like`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
+      const response = await api.post(`/api/products/${slug}/like`);
       // Update with server response
       setProduct(prev => ({
         ...prev,
@@ -201,14 +176,7 @@ const ProductDetail = () => {
     }
     //axios patch request to mark product as sold
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.patch(
-        `http://localhost:5000/api/products/${product.slug}/sold`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      await api.patch(`/api/products/${product.slug}/sold`);
       setProduct(prev => ({
         ...prev,
         isSold: true

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaEdit, FaTrash, FaUserPlus } from 'react-icons/fa';
+import api from '../../utils/api';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -27,7 +28,7 @@ const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/admin/users');
+      const response = await api.get('/api/admin/users');
       setUsers(response.data);
       console.log('Fetched users:', response.data);
     } catch (error) {
@@ -40,11 +41,11 @@ const AdminUsers = () => {
     try {
       if (selectedUser) {
         // Update existing user
-        await axios.put(`http://localhost:5000/api/admin/users/${selectedUser._id}`, formData);
+        await api.put(`/api/admin/users/${selectedUser._id}`, formData);
       } else {
         // Create new user
         console.log("formData", formData);
-        await axios.post('http://localhost:5000/api/admin/users', formData);
+        await api.post('/api/admin/users', formData);
       }
       fetchUsers();
       setIsModalOpen(false);
@@ -85,7 +86,7 @@ const AdminUsers = () => {
   const handleDelete = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/admin/users/${userId}`);
+        await api.delete(`/api/admin/users/${userId}`);
         fetchUsers();
       } catch (error) {
         console.error('Error deleting user:', error);

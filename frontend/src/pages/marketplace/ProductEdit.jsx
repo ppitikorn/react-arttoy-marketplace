@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import api from '../../utils/api';
 import BrandSelect from '../../components/form/BrandSelect';
 import TagsSelect from '../../components/form/TagsSelect';
 import { useAuth } from '../../context/AuthContext';
@@ -89,10 +90,7 @@ export default function ProductEdit() {
   const fetchProductData = async () => {
     try {
       setPageLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/products/${slug}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      
+      const response = await api.get(`/api/products/${slug}`);
       const productData = response.data;
       // Check if the current user is the owner of this product
       if (productData.seller._id !== user.id) {
@@ -139,8 +137,8 @@ export default function ProductEdit() {
   const fetchBrandsAndTags = async () => {
     try {
       const [brandsRes, tagsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/brand/'),
-        axios.get('http://localhost:5000/api/tags')
+        api.get('/api/brand/'),
+        api.get('/api/tags')
       ]);
       setBrands(brandsRes.data);
       setAvailableTags(tagsRes.data);
@@ -223,8 +221,8 @@ export default function ProductEdit() {
         formDataToSend.append('imagesToDelete', imageUrl);
       });
       console.log('Form data to send:', formDataToSend);
-      const response = await axios.put(
-        `http://localhost:5000/api/products/${slug}`, 
+      const response = await api.put(
+        `/api/products/${slug}`, 
         formDataToSend, 
         {
           headers: {
@@ -258,10 +256,7 @@ export default function ProductEdit() {
       cancelText: 'Cancel',
       onOk: async () => {
         try {
-          const token = localStorage.getItem('token');
-          await axios.delete(`http://localhost:5000/api/products/${slug}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          await api.delete(`/api/products/${slug}`);
           message.success('Product deleted successfully');
           navigate('/products');
         } catch (error) {

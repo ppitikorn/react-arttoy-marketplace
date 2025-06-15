@@ -62,7 +62,7 @@ const productSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['Published', 'Pending', 'Reported', 'Hidden'],
+      enum: ['Published', 'Pending', 'Rejected', 'Hidden'],
       default: 'Pending',
     },
     likes: [

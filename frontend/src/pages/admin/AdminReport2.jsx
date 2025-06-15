@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import api from '../../utils/api';
 import { format, formatDistanceToNow, isWithinInterval, parseISO } from 'date-fns';
 import { 
   FaClock, 
@@ -83,13 +84,7 @@ const AdminReport = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/reports`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const response = await api.get('/api/admin/reports');
       setReports(response.data);
     } catch (error) {
       console.error('Error fetching reports:', error);
@@ -102,15 +97,7 @@ const AdminReport = () => {
   const handleStatusUpdate = async (reportId, newStatus) => {
     try {
       setUpdateLoading(true);
-      const token = localStorage.getItem('token');
-      
-      await axios.patch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/reports/${reportId}/status`,
-        { status: newStatus },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      await api.patch(`/api/admin/reports/${reportId}/status`, { status: newStatus });
 
       alert(`Report ${newStatus.toLowerCase()} successfully`);
       

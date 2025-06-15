@@ -31,6 +31,7 @@ import {
   FilterOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
+import api from '../../utils/api';
 import { format, formatDistanceToNow, isWithinInterval, parseISO } from 'date-fns';
 
 const { Title, Text, Paragraph } = Typography;
@@ -75,13 +76,7 @@ const AdminReport2 = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/reports`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const response = await api.get('/api/admin/reports');
       setReports(response.data);
     } catch (error) {
       console.error('Error fetching reports:', error);
@@ -94,16 +89,7 @@ const AdminReport2 = () => {
   const handleStatusUpdate = async (reportId, newStatus) => {
     try {
       setUpdateLoading(true);
-      const token = localStorage.getItem('token');
-      
-      await axios.patch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/reports/${reportId}/status`,
-        { status: newStatus },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
+      await api.patch(`/api/admin/reports/${reportId}/status`,{ status: newStatus });
       message.success(`Report ${newStatus.toLowerCase()} successfully`);
       
       // Update local state

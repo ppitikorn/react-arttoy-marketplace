@@ -293,7 +293,7 @@ router.patch('/products/:id/status', authenticateJWT, isAdmin, async (req, res) 
     const { status } = req.body;
     
     // Validate status
-    if (!['Published', 'Hidden', 'Reported','Pending'].includes(status)) {
+    if (!['Published', 'Pending', 'Rejected', 'Hidden'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
