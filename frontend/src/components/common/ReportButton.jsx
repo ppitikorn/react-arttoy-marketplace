@@ -125,6 +125,7 @@ const ReportButton = ({ productId, productTitle }) => {
               placeholder="Describe the issue in more detail..."
               maxLength={500}
               showCount
+              style={{ resize: 'none' }}
             />
           </Form.Item>
 
