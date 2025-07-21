@@ -196,6 +196,7 @@ const Profile = () => {
     setOriginalValues({
       name: formik.values.name,
       bio: formik.values.bio,
+      email: formik.values.email,
       phoneNumber: formik.values.phoneNumber,
       avatar: formik.values.avatar,
       avatarFile: null
@@ -329,7 +330,7 @@ const Profile = () => {
                     type="email"
                     id="email"
                     name="email"
-                    disabled={true}
+                    disabled={!isEditing}
                     className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 text-white shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     value={formik.values.email}
                     onChange={formik.handleChange}

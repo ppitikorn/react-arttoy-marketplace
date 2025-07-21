@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/api.js';
 import { Button, Modal, Select, Input, message, Form, Typography } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 
@@ -30,7 +30,7 @@ const ReportButton = ({ productId, productTitle }) => {
         return;
       }
 
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/reports`, {
+      const response = await api.post(`/api/reports`, { //LASTEST
         productId,
         reason: values.reason,
         message: values.message || ''
