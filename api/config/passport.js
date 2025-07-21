@@ -5,6 +5,16 @@ const ExtractJwt = require('passport-jwt').ExtractJwt;
 const { JWT_SECRET } = require('./jwt');
 const User = require('../models/User');
 
+const randomNumber = () => {
+  return Math.floor(Math.random() * 10000); // generate 0000-9999
+};
+
+const generateUsername = (email) => {
+  const baseUsername = email.split('@')[0]; // Get part before '@'
+  const randomNum = randomNumber();
+  return `${baseUsername}_${randomNum}`; // Append random number to base username
+};
+
 // JWT Strategy
 const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -27,7 +37,7 @@ passport.use(new JwtStrategy(jwtOptions, async (payload, done) => {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/auth/google/callback",
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
     scope: ['profile', 'email']
   },
   async (accessToken, refreshToken, profile, done) => {
@@ -70,7 +80,7 @@ passport.use(new GoogleStrategy({
         email: email,
         name: profile.displayName,
         avatar: avatar,
-        username: email.split('@')[0], // Generate initial username from email
+        username: generateUsername(email), // Generate initial username from email
         emailVerified: true, // Email is verified since it's from Google
         oauthProviders: [{
           providerName: 'google',
@@ -86,3 +96,5 @@ passport.use(new GoogleStrategy({
     }
   }
 ));
+
+
