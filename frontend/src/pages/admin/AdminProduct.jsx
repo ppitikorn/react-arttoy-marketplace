@@ -33,7 +33,7 @@ const AdminProduct = () => {
   useEffect(() => {
     fetchProducts();
     //fetchReports();
-    console.log("Stats :",stats)
+    //console.log("Stats :",stats)
   }, []);
 
   const fetchProducts = async () => {
@@ -45,6 +45,7 @@ const AdminProduct = () => {
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
+      console.log("Fetched Products:", products);
       setLoading(false);
     }
   };
@@ -391,7 +392,7 @@ const AdminProduct = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">{product.category}</div>
-                      <div className="text-sm text-gray-500">{product.brand.parent.name} / {product.brand.name}</div>
+                      <div className="text-sm text-gray-500"> {product.brand.name}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">

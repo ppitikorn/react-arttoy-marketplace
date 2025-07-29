@@ -113,8 +113,9 @@ router.post('/login', async (req, res) => {
         role: user.role
       }
     });
+    console.log(`User "${user.username}" logged in successfully`);
   } catch (error) {
-    console.error('Login error:', error);
+    console.error(`User "${user.username}" login failed`, error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -122,9 +123,7 @@ router.post('/login', async (req, res) => {
 // Google OAuth routes
 router.get('/google', authenticateGoogle);
 
-router.get('/google/callback', 
-  passport.authenticate('google', { session: false }),
-  (req, res) => {
+router.get('/google/callback', passport.authenticate('google', { session: false }),(req, res) => {
     const token = generateToken(req.user);
     // Update last active timestamp
     req.user.lastActive = new Date();

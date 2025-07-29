@@ -8,6 +8,7 @@ const { uploadProduct } = require('../middleware/uploadMiddleware'); // Import t
 const slugify = require('slugify');
 const { v4: uuidv4 } = require('uuid');
 const { cloudinary } = require('../config/cloudinaryConfig'); // Import Cloudinary config
+const { detectLabels } = require('../config/google-vision'); // Import Google Vision label detection function
 
 // Helper function to extract public ID from Cloudinary URL
 const extractPublicId = (cloudinaryUrl) => {
@@ -84,25 +85,63 @@ router.post('/', authenticateJWT, uploadProduct.array('images', 5), async (req, 
     if (imageUrls.length === 0) {
       return res.status(400).json({ message: 'At least one image is required' });
     }
+    console.log('Uploaded image URLs:', imageUrls);
+    if(imageUrls){
+      imageUrls.forEach(async (imageUrl) => {
+        const isFriendly = await detectLabels(imageUrl);
+        if (isFriendly) {
+          console.log(`Image ${imageUrl} is friendly and colorful.`);
+          // Create a new product
+          const newProduct = new Product({
+            title,
+            slug,
+            price,
+            category,
+            brand,
+            images: imageUrls,
+            details,
+            condition,
+            rarity,
+            tags,
+            seller: userId,
+          });
 
+          await newProduct.save();
+          res.status(201).json({ message: 'Product created successfully', product: newProduct });
+        } else {
+          console.log(`Image ${imageUrl} is not friendly or colorful, rejecting product creation.`);
+          // Delete all product images from Cloudinary
+          if (imageUrls && imageUrls.length > 0) {
+            console.log('Deleting all product images from Cloudinary:', imageUrls);
+            try {
+              const deletionResults = await deleteCloudinaryImages(imageUrls);
+              console.log('Cloudinary deletion results:', deletionResults);
+            } catch (error) {
+              console.error('Error deleting product images from Cloudinary:', error);
+              // Continue with product deletion even if image deletion fails
+            }
+          }
+          return res.status(400).json({ message: 'Image does not meet friendly and colorful criteria' });
+        }
+      });
+    }
+    // // Create a new product
+    // const newProduct = new Product({
+    //   title,
+    //   slug,
+    //   price,
+    //   category,
+    //   brand,
+    //   images: imageUrls,
+    //   details,
+    //   condition,
+    //   rarity,
+    //   tags,
+    //   seller: userId,
+    // });
 
-    // Create a new product
-    const newProduct = new Product({
-      title,
-      slug,
-      price,
-      category,
-      brand,
-      images: imageUrls,
-      details,
-      condition,
-      rarity,
-      tags,
-      seller: userId,
-    });
-
-    await newProduct.save();
-    res.status(201).json({ message: 'Product created successfully', product: newProduct });
+    // await newProduct.save();
+    // res.status(201).json({ message: 'Product created successfully', product: newProduct });
   } catch (error) {
     console.error('Error creating product:', error);
     res.status(500).json({ message: 'Failed to create product' });
