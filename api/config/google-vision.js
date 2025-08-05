@@ -12,13 +12,14 @@ async function detectLabels(imagePath) {
 
         const [propertiesResult] = await client.imageProperties(imagePath);
         const dominantColors = propertiesResult.imagePropertiesAnnotation.dominantColors.colors;
-        const FriendlyLabels = ['toy','cartoon','fun','colorful','cute','playful','action figure','figurine','fictional character','baby toys','plastic','robot','animation','animated cartoon','collectable','doll'];
+        const FriendlyLabels = 
+        ['toy','cartoon','fun','colorful','cute','playful','action figure','figurine','stuffed toy', 'plush', 'mascot', 
+        'fictional character','baby toys','plastic','robot','animation','animated cartoon','collectable','doll'];
         const hasFriendlyLabel = labels.some(label => FriendlyLabels.includes(label));
         const isColorful = dominantColors.some(color => {color.score > 0.3 && color.pixelFraction > 0.1 && color.color});
-        console.log('Detected labels:', labels);
-        console.log('Has friendly label:', hasFriendlyLabel);
-        console.log('Is colorful:', isColorful);
-    
+        console.log(`Detected labels of imagePath ${imagePath}:`, labels);
+        // console.log(`Has friendly label of imagePath ${imagePath}:`, hasFriendlyLabel);
+        // console.log(`Is colorful of imagePath ${imagePath}:`, isColorful);
 
         if (hasFriendlyLabel || isColorful) {
             console.log('Image is friendly and colorful');

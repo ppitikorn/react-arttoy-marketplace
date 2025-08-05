@@ -38,7 +38,7 @@ const Login = () => {
         }
 
         if (result.success) {
-          navigate('/');
+          navigate('/products');
         } else {
           setError(result.error);
         }

@@ -6,9 +6,8 @@ const {uploadProfile} = require('../middleware/uploadMiddleware'); // Import the
 const { cloudinary } = require('../config/cloudinaryConfig');
 
 // Use development email config if in development mode
-const emailConfig = process.env.NODE_ENV === 'development' 
-  ? require('../config/emailConfig.dev')
-  : require('../config/emailConfig');
+const emailConfig = process.env.NODE_ENV === 'development' ? require('../config/emailConfig.dev')
+: require('../config/emailConfig.js');
 
 const { generateOTP, sendVerificationEmail } = emailConfig;
 // Get user profile

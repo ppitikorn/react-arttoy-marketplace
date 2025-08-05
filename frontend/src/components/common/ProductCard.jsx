@@ -2,6 +2,19 @@ import React from 'react'
 import { Link } from 'react-router-dom';
 
 function ProductCard({ product , isSold = false }) {  
+
+  if (!product) return null;
+  if (!product.seller) {
+    console.error('Product does not have a seller:', product);
+    return null;
+  }
+  if (!product.images || product.images.length === 0) {
+    console.error('Product does not have images:', product);
+    return null;
+  }
+
+
+
   return (
     <>
     {isSold ? (
@@ -92,17 +105,18 @@ function ProductCard({ product , isSold = false }) {
             
             {/* Seller info - always positioned after title */}
             <Link
-              to={`/profile/${product.seller.username}`}
+              to={`/profile/${product.seller?.username}`}
               className="flex items-center gap-2 mt-2 hover:bg-gray-300 transition-transform rounded-lg p-2"
               onClick={(e) => e.stopPropagation()}
             >
               <img
-                src={product.seller.avatar}
-                alt={product.seller.name}
+                src={product.seller?.avatar}
+                alt={product.seller?.name}
                 className="w-6 h-6 rounded-full border border-gray-300"
               />
-              <span className="text-sm text-gray-500">{product.seller.name}</span>
-              {product.seller.emailVerified && (
+              <span className="text-sm text-gray-500">{product.seller?.name}</span>
+              {product.seller?.emailVerified && (
+                <>
                 <svg
                   className="w-4 h-4 text-blue-500"
                   fill="currentColor"
@@ -114,9 +128,11 @@ function ProductCard({ product , isSold = false }) {
                     clipRule="evenodd"
                   />
                 </svg>
+                <span className="text-xs text-gray-500 ml-1">Verified</span>
+                </>
               )}
             </Link>
-            
+
             {/* Push remaining content to bottom with flex-grow */}
             <div className="mt-auto pt-3">
               <div className="flex justify-between items-center mb-2">
