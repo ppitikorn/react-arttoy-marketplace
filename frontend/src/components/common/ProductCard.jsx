@@ -1,19 +1,17 @@
 import React from 'react'
 import { Link } from 'react-router-dom';
 
-function ProductCard({ product , isSold = false }) {  
+function ProductCard({ product , isSold = false}) {  
 
-  if (!product) return null;
-  if (!product.seller) {
-    console.error('Product does not have a seller:', product);
-    return null;
-  }
-  if (!product.images || product.images.length === 0) {
-    console.error('Product does not have images:', product);
-    return null;
-  }
+  if (!product) return <div className="text-red-500">เกิดข้อผิดพลาด: ไม่พบข้อมูลสินค้า</div>;
+  const hasSeller = !!product.seller;
+  const hasImages = product.images && product.images.length > 0;
+  if (!hasSeller) console.error('Missing seller:', product);
+  if (!hasImages) console.error('Missing images:', product);
 
+  
 
+  
 
   return (
     <>
@@ -26,28 +24,32 @@ function ProductCard({ product , isSold = false }) {
             </div>
           </div>
           {/* Image container with fixed height */}
-          <div className="aspect-w-1 aspect-h-1">
-              <img
-                  src={product.images[0]}
-                  alt={product.title}
-                  className="w-full h-48 object-cover grayscale"
-              />
-          </div>
+          {hasImages ? (<div className="aspect-w-1 aspect-h-1">
+                  <img
+                        src={product.images[0]}
+                        alt={product.title}
+                        className="w-full h-48 object-cover grayscale"
+                    />
+                </div>
+                  ):(
+                  <div className="bg-red-100 text-red-600 p-4 rounded text-center">❌ ไม่มีรูปภาพสินค้า</div>
+                )}
           {/* Content container with flex layout to maintain consistent positioning */}
           <div className="p-4 flex flex-col flex-grow">
             {/* Title with fixed height or min-height to ensure consistency */}
             <div className="min-h-[3.5rem]">
-              <h3 className="text-lg font-semibold mb-2 text-left line-clamp-2 text-gray-600">{product.title}</h3>
+              <h3 className="text-lg font-semibold mb-2 text-left line-clamp-2 text-gray-600">{product.title || 'ไม่มีชื่อสินค้า'}</h3>
             </div>
             
             {/* Seller info - no longer clickable for sold items */}
+
             <div className="flex items-center gap-2 mt-2 p-2">
               <img
-                src={product.seller.avatar}
+                src={product.seller.avatar || 'https://placehold.co/600x400'}
                 alt={product.seller.name}
                 className="w-6 h-6 rounded-full border border-gray-300 grayscale"
               />
-              <span className="text-sm text-gray-400">{product.seller.name}</span>
+              <span className="text-sm text-gray-400">{product.seller.name || 'ไม่มีชื่อผู้ขาย'}</span>
               {product.seller.emailVerified && (
                 <svg
                   className="w-4 h-4 text-gray-400"
