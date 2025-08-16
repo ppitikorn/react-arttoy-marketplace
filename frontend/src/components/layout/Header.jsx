@@ -15,7 +15,7 @@ const Header = () => {
                 className=" h-11 w-13 inline-block "
                 alt="Arttoy Marketplace"
               />
-              BP Art Toy
+              BP Art Toy Marketplace
             </Link>
           </div>
           <nav className="hidden md:flex items-center space-x-4">
