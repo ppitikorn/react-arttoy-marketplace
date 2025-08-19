@@ -1,3 +1,4 @@
+// pshop/api/models/ProductView.js
 const mongoose = require('mongoose');
 
 const productViewSchema = new mongoose.Schema({

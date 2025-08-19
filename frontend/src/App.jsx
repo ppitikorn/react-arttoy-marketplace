@@ -19,6 +19,7 @@ import AdminTags from './pages/admin/AdminTags';
 import ProductEdit from './pages/marketplace/ProductEdit';
 import AdminReport from './pages/admin/AdminReport';
 import AdminReport2 from './pages/admin/AdminReport2';
+import AdminReport3 from './pages/admin/AdminReport3';
 import './App.css';
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
                 <Route path="tags" element={<AdminTags />} />
                 <Route path="reports" element={<AdminReport />} />
                 <Route path="reports2" element={<AdminReport2 />} />
+                <Route path="reports3" element={<AdminReport3 />} />
 
               </Route>
             </Routes>

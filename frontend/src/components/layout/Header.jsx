@@ -5,6 +5,7 @@ const Header = () => {
   const { user, logout } = useAuth();
   
   return (
+
      <header className="bg-yellow-200 shadow-lg fixed w-full top-0 z-50">
       <div className="max-w-8xl mx-auto px-4 ">
         <div className="flex justify-between h-16">
@@ -34,6 +35,7 @@ const Header = () => {
                 </Link>
                 {user.role === 'admin' && (
                   <Link to="/admin" className="text-black hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium">
+
                     Admin Dashboard
                   </Link>
                 )}

@@ -39,7 +39,7 @@ const { Option } = Select;
 const { RangePicker } = DatePicker;
 const { Search } = Input;
 
-const AdminReport2 = () => {
+const AdminReport = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
@@ -509,4 +509,4 @@ const AdminReport2 = () => {
   );
 };
 
-export default AdminReport2;
+export default AdminReport;

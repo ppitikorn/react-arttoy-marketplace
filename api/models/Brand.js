@@ -1,4 +1,4 @@
-// models/Category.js
+// models/Brand.js
 const mongoose = require("mongoose");
 
 const brandSchema = new mongoose.Schema(

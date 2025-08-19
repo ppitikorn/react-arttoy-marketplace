@@ -299,19 +299,19 @@ const ProductDetail = () => {
               <div className="border-t border-b border-gray-200 py-4">
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">Seller</h2>
                 <Link
-                  to={`/profile/${product.seller.username}`}
+                  to={`/profile/${product?.seller?.username}`}
                   className="flex items-center gap-3 p-3 hover:bg-gray-300 rounded-lg transition-colors"
                 >
                   <img
-                    src={product.seller.avatar || 'https://placehold.co/400'}
-                    alt={product.seller.name}
+                    src={product?.seller?.avatar || 'https://placehold.co/400'}
+                    alt={product?.seller?.name}
                     className="w-12 h-12 rounded-full border border-gray-300"
                   />
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">{product.seller.name}</p>
-                    <p className="text-sm text-gray-500">@{product.seller.username}</p>
+                    <p className="font-medium text-gray-900">{product?.seller?.name}</p>
+                    <p className="text-sm text-gray-500">@{product?.seller?.username}</p>
                   </div>
-                  {product.seller.emailVerified && (
+                  {product?.seller?.emailVerified && (
                     <svg
                       className="w-5 h-5 text-blue-500"
                       fill="currentColor"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useMemo } from 'react';
 import axios from 'axios';
 import api from '../../utils/api';
 import { format, formatDistanceToNow, isWithinInterval, parseISO } from 'date-fns';
@@ -14,12 +14,15 @@ import {
   FaTimes,
   FaSpinner
 } from 'react-icons/fa';
+import ProductCard from '../../components/common/ProductCard';
 
-const AdminReport2 = () => {
+const AdminReport3 = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [reportDetail, setReportDetail] = useState(null);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [filters, setFilters] = useState({
     status: 'all',
@@ -121,6 +124,10 @@ const AdminReport2 = () => {
     setSelectedReport(report);
     setDetailModalVisible(true);
   };
+  const showReport = (report) => {
+    setReportDetail(report);
+    setReportModalVisible(true);
+  };
   // Filter reports based on current filters
   const filteredReports = reports.filter(report => {
     let matchesFilter = true;
@@ -190,6 +197,29 @@ const AdminReport2 = () => {
     });
     setCurrentPage(1);
   };
+  const groupedReports = useMemo(() => {
+  const result = {};
+
+  currentReports.forEach(report => {
+    const product = report.product;
+    if (!product || !product._id) return;
+
+    const id = product._id;
+    if (!result[id]) {
+      result[id] = {
+        product: product,
+        count: 0,
+        reports: []
+      };
+    }
+
+    result[id].count += 1;
+    result[id].reports.push(report);
+  });
+
+  return result;
+}, [currentReports]);
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
@@ -351,7 +381,8 @@ const AdminReport2 = () => {
       </div>
 
       {/* Reports Table */}
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+      {/* </div><div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden"> */}
+      <div className="min-h-screen bg-[#f0f2f5] p-6 text-gray-800">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <FaSpinner className="animate-spin h-8 w-8 text-blue-600" />
@@ -359,93 +390,57 @@ const AdminReport2 = () => {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Product
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reporter
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Reason
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {currentReports.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                        No reports found
-                      </td>
-                    </tr>
-                  ) : (
-                    currentReports.map((report) => (
-                      <tr key={report._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            {report.product?.images?.[0] && (
-                              <img
-                                className="h-10 w-10 rounded object-cover mr-3"
-                                src={report.product.images[0]}
-                                alt={report.product.title}
-                              />
-                            )}
-                            <div className="text-sm font-medium text-gray-900 max-w-xs truncate">
-                              {report.product?.title || 'Product Deleted'}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {report.reporter?.username || 'Unknown User'}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {report.reporter?.email}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${reasonConfig[report.reason]?.color || reasonConfig['Other'].color}`}>
-                            {reasonConfig[report.reason]?.icon}
-                            <span className="ml-1">{report.reason}</span>
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className={`h-2 w-2 rounded-full ${statusConfig[report.status]?.badge} mr-2`}></div>
-                            <span className="text-sm text-gray-900">{report.status}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div title={format(new Date(report.createdAt), 'yyyy-MM-dd HH:mm:ss')}>
-                            {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => setSelectedReport(report) || setDetailModalVisible(true)}
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            <FaEye className="h-3 w-3 mr-1" />
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {/* {currentReports.map(report => (
+                <>
+                <ProductCard
+                  key={report._id}
+                  product={report.product}
+                  report={true}
+                />
+                <div className="mt-2 p-2 bg-red-50 border-l-4 border-red-400">
+                <p>🚩 รายงานแล้ว 5 ครั้ง</p>
+                <p className="text-sm text-gray-700">
+                  เหตุผลยอดนิยม: "ไม่เหมาะสม", "รูปไม่ตรงกับสินค้า"
+                </p>
+                <button>ดูรายงานทั้งหมด</button>
+                <button >🗑️ ลบโพสต์</button>
+                <button >✅ ละเว้นรายงาน</button>
+                </div>
+              </>
+              ))} */}
+              {Object.values(groupedReports).map(group => (
+                  <>
+                  <ProductCard
+                    key={group.product._id}
+                    product={group.product}
+                    reportCount={group.count}
+                    reports={group.reports}
+                  />
+                  <div className="mt-2 p-2 bg-red-50 border-l-4 border-red-400">
+                    <p>🚩 รายงานแล้ว {group.count} ครั้ง</p>
+                    <p className="text-sm text-gray-700">
+                      เหตุผลยอดนิยม: {group.reports.map(r => r.reason).join(', ')}
+                    </p>
+                    <button 
+                      className="text-blue-600 hover:underline mr-2"
+                      onClick={() => showReport(group.reports)}
+                    >
+                      ดูรายงานทั้งหมด
+                    </button>
+                    <button 
+                    className="text-red-600 hover:underline mr-2"
+                    onClick={() => handleStatusUpdate(group.product._id, 'Dismissed')}
+                    >
+                      🗑️ ลบโพสต์
+                    </button>
+                    <button className="text-green-600 hover:underline">
+                      ✅ ละเว้นรายงาน
+                    </button>
+                  </div>
+                </>
+              ))}
+
             </div>
 
             {/* Pagination */}
@@ -483,7 +478,7 @@ const AdminReport2 = () => {
         )}
       </div>
 
-      {/* Report Detail Modal */}
+      {/* Report Detail Modal onClick={() => showReportDetail(group.reports[0])}*/}
       {detailModalVisible && selectedReport && (
         <div className="fixed inset-0  bg-black/75 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
@@ -621,8 +616,109 @@ const AdminReport2 = () => {
           </div>
         </div>
       )}
+
+      {/* Report ALL*/}
+      {reportDetail && reportModalVisible && (
+        <div className="fixed inset-0  bg-black/75 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Report Details</h3>
+                <button
+                  onClick={() => setReportModalVisible(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FaTimes className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Reporter
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Reason
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      More Reason
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th> */}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {reportDetail.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                        No reports found
+                      </td>
+                    </tr>
+                  ) : (
+                    reportDetail.map((report) => (
+                      <tr key={report._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {report.reporter?.username || 'Unknown User'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {report.reporter?.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${reasonConfig[report.reason]?.color || reasonConfig['Other'].color}`}>
+                            {reasonConfig[report.reason]?.icon}
+                            <span className="ml-1">{report.reason}</span>
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {report.message || 'No additional details provided'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className={`h-2 w-2 rounded-full ${statusConfig[report.status]?.badge} mr-2`}></div>
+                            <span className="text-sm text-gray-900">{report.status}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div title={format(new Date(report.createdAt), 'yyyy-MM-dd HH:mm:ss')}>
+                            {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
+                          </div>
+                        </td>
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => setSelectedReport(report) || setDetailModalVisible(true)}
+                            className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <FaEye className="h-3 w-3 mr-1" />
+                            View
+                          </button>
+                        </td> */}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+
+              {/* Modal Footer */}
+          
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
 
-export default AdminReport2;
+export default AdminReport3;

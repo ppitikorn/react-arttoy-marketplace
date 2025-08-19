@@ -317,10 +317,23 @@ router.patch('/products/:id/status', authenticateJWT, isAdmin, async (req, res) 
 router.get('/reports', authenticateJWT, isAdmin, async (req, res) => {
   try {
     const reports = await Report.find()
-      .populate('product', 'title images')
+      .populate({
+        path: 'product',
+        select: 'title images price condition category rarity slug seller',
+        populate: {
+          path: 'seller',
+          select: 'username avatar name emailVerified'
+        }
+      })
       .populate('reporter', 'username email')
       .sort({ createdAt: -1 });
-    res.json(reports);
+      
+    // กรองเฉพาะ product ที่มี seller อยู่จริง
+    const filteredReports = reports.filter(report => 
+      report.product && report.product.seller
+    );
+    res.json(filteredReports);
+
   } catch (error) {
     res.status(500).json({ message: 'Error fetching reports', error: error.message });
   }
