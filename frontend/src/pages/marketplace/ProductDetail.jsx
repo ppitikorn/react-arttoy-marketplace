@@ -222,7 +222,7 @@ const ProductDetail = () => {
     );  }
   
   return (
-    <div className="min-h-screen bg-[#f0f2f5] py-8">
+    <div className="min-h-screen bg-yellow-100 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav className="mb-6">

@@ -30,6 +30,7 @@ const Profile = () => {
     initialValues: {
       name: '',
       email: '',
+      username: '',
       bio: '',
       phoneNumber: '',
       avatar: '',
@@ -38,6 +39,7 @@ const Profile = () => {
     },
     validationSchema: Yup.object({
       name: Yup.string().required('Required'),
+      username: Yup.string().required('Required'),
       email: Yup.string().email('Invalid email address').required('Required'),
       bio: Yup.string(),
       phoneNumber: Yup.string()
@@ -63,6 +65,7 @@ const Profile = () => {
         formData.append('email', values.email);
         formData.append('bio', values.bio || '');
         formData.append('phoneNumber', values.phoneNumber || '');
+        formData.append('username', values.username);
 
         if (values.avatarFile) {
           formData.append('avatarFile', values.avatarFile);
@@ -115,6 +118,7 @@ const Profile = () => {
           email: profileData.email || '',
           bio: profileData.bio || '',
           phoneNumber: profileData.phoneNumber || '',
+          username: profileData.username || '',
           avatar: profileData.avatar || '',
           emailVerified: profileData.emailVerified || false,
         });
@@ -225,10 +229,10 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 py-12">
+    <div className="min-h-screen bg-yellow-100 py-20">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-gray-800 shadow-xl rounded-lg overflow-hidden">
-          <div className="p-6">
+          <div className="p-15  bg-white rounded-lg border border-black shadow-md">
             {error && (
               <div className="mb-4 bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded relative">
                 {error}
@@ -265,9 +269,9 @@ const Profile = () => {
               </div>
             </div>
               {verificationStatus.emailVerified ? (
-              <div className="mt-6 bg-green-900/50 border border-green-700 rounded-md p-4">
+              <div className="mt-6 bg-green-600 border border-red rounded-md p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-green-500 flex items-center">
+                  <p className="text-sm text-green-200 flex items-center">
                     <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
@@ -276,11 +280,11 @@ const Profile = () => {
                 </div>
               </div>
             ) : (
-              <div className="mt-6 bg-yellow-900/50 border border-yellow-700 rounded-md p-4">
+              <div className="mt-6 bg-red-200 border border-yellow-700 rounded-md p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-yellow-500">
-                      Please verify your email address
+                    <p className="text-sm text-yellow-700 flex items-center">
+                      ยืนยัน Email
                     </p>
                     {!verificationStatus.canRequestNew && (
                       <p className="text-xs text-yellow-400 mt-1">
@@ -291,7 +295,8 @@ const Profile = () => {
                   <button
                     onClick={handleVerifyEmail}
                     disabled={otpLoading || !verificationStatus.canRequestNew}
-                    className="text-sm text-yellow-500 hover:text-yellow-400 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-sm text-yellow-700 hover:text-yellow-500 font-medium disabled:opacity-50 
+                    disabled:cursor-not-allowed"
                   >
                     {otpLoading ? 'Sending...' : 'Verify Now'}
                   </button>
@@ -303,9 +308,26 @@ const Profile = () => {
             )}
 
             <form onSubmit={formik.handleSubmit} className="mt-6 space-y-6">
+              <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-black">
+                    Username
+                  </label>
+                  <input
+                    type="username"
+                    id="username"
+                    name="username"
+                    disabled={!isEditing}
+                    className="mt-1 block w-full rounded-md border border-black 
+                    bg-gray-200 text-black shadow-sm py-2 px-3 focus:outline-none focus:ring-2 
+                    focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    value={formik.values.username}
+                    onChange={formik.handleChange}
+                  />
+                </div>  
+
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+                  <label htmlFor="name" className="block text-sm font-medium text-black">
                     Name
                   </label>
                   <input
@@ -313,7 +335,9 @@ const Profile = () => {
                     id="name"
                     name="name"
                     disabled={!isEditing}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 text-white shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-1 block w-full rounded-md border border-black 
+                    bg-gray-200 text-black shadow-sm py-2 px-3 focus:outline-none focus:ring-2 
+                    focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     value={formik.values.name}
                     onChange={formik.handleChange}
                   />
@@ -323,7 +347,7 @@ const Profile = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+                  <label htmlFor="email" className="block text-sm font-medium text-black">
                     Email
                   </label>
                   <input
@@ -331,7 +355,9 @@ const Profile = () => {
                     id="email"
                     name="email"
                     disabled={!isEditing}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 text-white shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-1 block w-full rounded-md border border-black 
+                    bg-gray-200 text-black shadow-sm py-2 px-3 focus:outline-none focus:ring-2 
+                    focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     value={formik.values.email}
                     onChange={formik.handleChange}
                   />
@@ -341,7 +367,7 @@ const Profile = () => {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label htmlFor="bio" className="block text-sm font-medium text-gray-300">
+                  <label htmlFor="bio" className="block text-sm font-medium text-black">
                     Bio
                   </label>
                   <textarea
@@ -349,14 +375,16 @@ const Profile = () => {
                     name="bio"
                     rows="4"
                     disabled={!isEditing}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 text-white shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-1 block w-full rounded-md border border-black 
+                    bg-gray-200 text-black shadow-sm py-2 px-3 focus:outline-none focus:ring-2 
+                    focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     value={formik.values.bio}
                     onChange={formik.handleChange}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-300">
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-black">
                     Phone Number
                   </label>
                   <input
@@ -368,7 +396,9 @@ const Profile = () => {
                     pattern="[0-9]*"
                     placeholder="1234567890"
                     disabled={!isEditing}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 text-white shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="mt-1 block w-full rounded-md border border-black 
+                    bg-gray-200 text-black shadow-sm py-2 px-3 focus:outline-none focus:ring-2 
+                    focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     value={formik.values.phoneNumber}
                     onChange={(e) => {
                       e.target.value = e.target.value.replace(/\D/g, "");
@@ -380,20 +410,24 @@ const Profile = () => {
                   )}
                 </div>
               </div>
-
+              
               <div className="flex justify-end space-x-3">
                 {isEditing ? (
                   <>
                     <button
                       type="button"
                       onClick={handleCancel}
-                      className="px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                      className="px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium 
+                      text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 
+                      focus:ring-gray-500"
                     >
                       Cancel
                     </button>                    
                     <button
                       type="submit"
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm 
+                      text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none 
+                      focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       Save Changes
                     </button>
@@ -415,14 +449,14 @@ const Profile = () => {
       {/* OTP Verification Modal */}
       {showOTPModal && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="text-center">
-              <h3 className="text-lg font-medium text-white mb-4">
-                Email Verification
+              <h3 className="text-lg font-medium text-black mb-4">
+                การยืนยัน Email
               </h3>
-              <p className="text-gray-300 text-sm mb-6">
-                We've sent a 6-digit verification code to your email address. 
-                Please enter it below to verify your account.
+              <p className="text-black text-sm mb-6">
+                เราได้ส่งรหัสยืนยัน 6 หลักไปยังที่อยู่อีเมลของคุณแล้ว
+                กรุณากรอกด้านล่างเพื่อยืนยันบัญชีของคุณ
               </p>
 
               {otpError && (
@@ -432,8 +466,8 @@ const Profile = () => {
               )}
 
               <div className="mb-6">
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-300 mb-2">
-                  Verification Code
+                <label htmlFor="otp" className="block text-sm font-medium text-black mb-2">
+                  รหัสยืนยัน
                 </label>
                 <input
                   type="text"
@@ -444,13 +478,15 @@ const Profile = () => {
                     const value = e.target.value.replace(/\D/g, '').slice(0, 6);
                     setOtp(value);
                   }}
-                  placeholder="Enter 6-digit code"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="กรอกรหัส 6 หลัก"
+                  className="w-full px-3 py-2 bg-white border border-gray-600 
+                  rounded-md text-black text-center text-lg tracking-widest focus:outline-none 
+                  focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   maxLength={6}
                   autoComplete="off"
                 />
-                <p className="text-xs text-gray-400 mt-2">
-                  Code expires in 10 minutes
+                <p className="text-xs text-black mt-2">
+                  รหัสจะหมดอายุใน 10 นาที
                 </p>
               </div>
 
@@ -458,14 +494,18 @@ const Profile = () => {
                 <button
                   onClick={handleCloseOTPModal}
                   disabled={otpLoading}
-                  className="flex-1 px-4 py-2 border border-gray-600 rounded-md text-gray-300 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 border border-gray-600 rounded-md text-black 
+                  hover:bg-red-300 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleVerifyOTP}
                   disabled={otpLoading || otp.length !== 6}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 
+                  font-medium text-black rounded-md shadow-sm focus:outline-none focus:ring-2   
+                  rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 
+                  disabled:cursor-not-allowed"
                 >
                   {otpLoading ? 'Verifying...' : 'Verify'}
                 </button>
@@ -475,9 +515,10 @@ const Profile = () => {
                 <button
                   onClick={handleVerifyEmail}
                   disabled={otpLoading || !verificationStatus.canRequestNew}
-                  className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="text-sm text-blue-600 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Didn't receive code? Resend
+                  ไม่ได้รับรหัสใช่ไหม? ส่งอีกครั้ง
+
                 </button>
                 {!verificationStatus.canRequestNew && (
                   <p className="text-xs text-gray-400 mt-1">
