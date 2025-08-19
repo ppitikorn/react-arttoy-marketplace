@@ -3,15 +3,11 @@ import { Link } from 'react-router-dom';
 
 function ProductCard({ product , isSold = false }) {  
 
-  if (!product) return null;
-  if (!product.seller) {
-    console.error('Product does not have a seller:', product);
-    return null;
-  }
-  if (!product.images || product.images.length === 0) {
-    console.error('Product does not have images:', product);
-    return null;
-  }
+  if (!product) return <div className="text-red-500">เกิดข้อผิดพลาด: ไม่พบข้อมูลสินค้า</div>;
+  const hasSeller = !!product.seller;
+  const hasImages = product.images && product.images.length > 0;
+  if (!hasSeller) return <div className="text-red-500">เกิดข้อผิดพลาด: ไม่พบคนขาย</div>;
+  if (!hasImages) return <div className="text-red-500">เกิดข้อผิดพลาด: ไม่พบข้อมูลรูป</div>;
 
 
 
@@ -86,7 +82,8 @@ function ProductCard({ product , isSold = false }) {
         <Link
           key={product._id}
           to={`/products/${product.slug}`}
-          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:scale-105 transition-transform transition-shadow duration-300 flex flex-col h-full"
+          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:scale-105 
+          transition-transform transition-shadow duration-300 flex flex-col h-full"
         >
           {/* Image container with fixed height */}
           <div className="aspect-w-1 aspect-h-1">

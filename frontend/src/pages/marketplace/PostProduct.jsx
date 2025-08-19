@@ -169,7 +169,7 @@ export default function PostProduct() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f2f5', padding: '24px' }}>
+    <div style={{ minHeight: '100vh', background: 'rgb(254 249 195)', padding: '24px' }}>
       <Card style={{ maxWidth: 800, margin: '0 auto' }}>
         <Title level={2} style={{ marginBottom: 24 }}>List Your Art Toy</Title>
 
@@ -180,10 +180,12 @@ export default function PostProduct() {
           initialValues={formData}
           onValuesChange={onValuesChange}
         >
+          
           <Form.Item
             label="Product Images"
             name="images"
             rules={[{ required: true, message: 'Please upload at least one image' }]}
+            
           >
             <Upload
               accept="image/*"
@@ -199,6 +201,7 @@ export default function PostProduct() {
               {formData.images.length >= 4 ? null : uploadButton}
             </Upload>
           </Form.Item>
+         
 
           <Form.Item
             label="Product Title"
@@ -296,14 +299,7 @@ export default function PostProduct() {
             >
               {isLoading ? 'Creating...' : 'List Product'}
             </Button>
-              <Button
-                type="default"
-                onClick={async () => {
-                  console.log("FormData", formData);
-                }} // Log the selected category
-              >
-                Log Selected Category
-              </Button>
+
           </Form.Item>
         </Form>
       </Card>

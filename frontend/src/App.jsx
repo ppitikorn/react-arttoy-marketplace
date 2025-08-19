@@ -36,7 +36,11 @@ function App() {
               <Route path="/products/edit/:slug" element={<ProtectedRoute><ProductEdit /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/post-product" element={<ProtectedRoute><PostProduct /></ProtectedRoute>} />
-              
+
+
+
+
+
               <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminLayout /></ProtectedRoute>}>
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="brands" element={<AdminBrands />} />

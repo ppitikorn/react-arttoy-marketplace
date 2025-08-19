@@ -29,7 +29,7 @@ const Header = () => {
                 <Link to="/post-product" className="text-black hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium">
                   Post Product
                 </Link>
-                <Link to="/profile" className="text-black hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium">
+                <Link to={`/profile/${user?.username}`} className="text-black hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium">
                   Profile
                 </Link>
                 {user.role === 'admin' && (
