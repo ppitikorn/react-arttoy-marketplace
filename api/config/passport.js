@@ -51,7 +51,6 @@ passport.use(new GoogleStrategy({
       if (user) {
         return done(null, user);
       }
-
       // If not found by Google ID, check if email exists
       const email = profile.emails[0].value;
       const avatar = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
@@ -61,12 +60,12 @@ passport.use(new GoogleStrategy({
         user = await User.findByIdAndUpdate(
           user._id,
           {
+            $set: { avatar: avatar ,emailVerified: true},
             $push: {
-              avatar: avatar,
               oauthProviders: {
                 providerName: 'google',
                 providerId: profile.id,
-                accessToken: accessToken,
+                accessToken,
                 refreshToken: refreshToken || ''
               }
             },
