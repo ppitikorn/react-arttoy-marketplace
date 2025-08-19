@@ -198,8 +198,8 @@ router.get('/published', async (req, res) => {
         return res.status(200).json([]); // Return empty array if seller not found
       }
     }
-    const products = await Product.find({ isSold: false, status: 'Published', ...filter })
-      .populate('seller', 'avatar username name emailVerified');
+    const productsBefore = await Product.find({ isSold: false, status: 'Published', ...filter }).populate('seller', 'avatar username name emailVerified');
+    const products = productsBefore.filter(p => p.seller !== null);
     res.status(200).json(products);
   } catch (error) {
     console.error('Error fetching published products:', error);
