@@ -23,22 +23,25 @@ router.get('/', authenticateJWT, async (req, res) => {
 // Update user profile
 router.put('/', authenticateJWT, uploadProfile.single('avatarFile'), async (req, res) => {
   try {
-    const { name, email, bio, phoneNumber } = req.body;
+    const { name,username,email, bio, phoneNumber } = req.body;
     const currentUser = await User.findById(req.user._id);
     
     // Validate required fields
-    if (!name || !email) {
-      return res.status(400).json({ message: 'Name and email are required' });
+    if (!name || !email || !username) {
+      return res.status(400).json({ message: 'Name, email, and username are required' });
     }
 
-    // Username cannot be changed
-    if (req.body.username) {
-      return res.status(400).json({ message: 'Username cannot be changed' });
+    // Check if Username is being changed and if it's already in use
+    if (username !== req.user.username) {
+      const existingUsername = await User.findOne({ username });
+      if (existingUsername) {
+        return res.status(400).json({ message: 'Username already in use' });
+      }
     }
       // Check if email is being changed and if it's already in use
     if (email !== req.user.email) {
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
         return res.status(400).json({ message: 'Email already in use' });
       }
     }
@@ -61,6 +64,7 @@ router.put('/', authenticateJWT, uploadProfile.single('avatarFile'), async (req,
       {
         $set: {
           name,
+          username,
           email,
           bio,
           phoneNumber,
