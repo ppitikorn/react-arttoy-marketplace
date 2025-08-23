@@ -63,8 +63,6 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.post('/api/auth/login', { email, password });
       const { token: t, user: u } = res.data;
-
-      // เก็บ + ตั้ง header ทันที
       localStorage.setItem('token', t);
       api.defaults.headers.common['Authorization'] = `Bearer ${t}`;
 

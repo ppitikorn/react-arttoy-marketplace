@@ -197,6 +197,7 @@ export default function ChatPlayground() {
 }
 
   return (
+    <div className="min-h-[80vh] py-3 bg-yellow-100">
     <div className="flex h-[600px] w-full max-w-5xl mx-auto mt-8 rounded-2xl border bg-white shadow overflow-hidden">
       {/* Sidebar: User List */}
       <aside className="w-80 border-r bg-gray-50 flex flex-col">
@@ -310,6 +311,7 @@ export default function ChatPlayground() {
           </button>
         </form>
       </section>
+    </div>
     </div>
   );
 }
