@@ -1,10 +1,11 @@
 // frontend/src/pages/chat/ChatPlayground.jsx
-import { useEffect, useRef, useState , useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link ,useSearchParams} from 'react-router-dom';
 import io from "socket.io-client";
 import api from "../../utils/api";
 import { FaRegImage } from "react-icons/fa";
-import {useAuth} from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
+import { useChat } from "../../context/ChatContext";
 
 export default function ChatPlayground() {
   const [users, setUsers] = useState([]);
@@ -19,20 +20,15 @@ export default function ChatPlayground() {
   const [params] = useSearchParams();
   const peerFromQuery = params.get("peer"); 
 
-  const getToken = () => localStorage.getItem("token");
+  const { socket, joinConversation, leaveConversation, sendMessage, markRead } = useChat();
+
   const fmtTime = (d) =>
   d ? new Date(d).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : "";
 
-  const socket = useMemo(() => {
-    return io(import.meta.env.VITE_API_URL, {
-      auth: { token: getToken() },
-      withCredentials: true,
-      transports: ["websocket"],
-    });
-  }, []);
+  //peerId from ChatButton
   useEffect(() => {
   (async () => {
-    const res = await api.get("/api/chat/conversations");
+    const res = await api.get("/api/chat/conversations");//GET SIDEBAR
     const items = Array.isArray(res.data?.items) ? res.data.items : [];
     setUsers(items);
 
@@ -68,33 +64,6 @@ export default function ChatPlayground() {
     }
   })();
 }, [peerFromQuery]);
-  // Fetch user list
-  // useEffect(() => {
-  //   const fetchUsers = async () => {
-  //     const res = await api.get("/api/chat/conversations");
-  //     setUsers(res.data.items);
-  //     console.log("Fetched Conversations:", res.data);
-  //     if (res.data.items.length > 0) setSelectedUser(res.data.items[0]);
-  //     console.log("Users:", users);
-  //     console.log("SelectedUser:", selectedUser);
-  //   };
-  //   fetchUsers();
-  // }, []);
-
-  // Fetch conversation and messages when user selected
-  useEffect(() => {
-    if (!selectedUser) return;
-    const fetchChat = async () => {
-      const res = await api.post("/api/chat/conversations", { peerId: selectedUser?.peer?._id });
-      const convo = res.data;
-      setConversationId(convo._id);
-      // 2. Fetch messages
-      const messagesRes = await api.get(`/api/chat/messages?conversationId=${convo._id}`);
-      setMessages(messagesRes.data);
-    };
-    fetchChat();
-  }, [selectedUser]);
-
 
   // เมื่อเลือก user → create/get conversation + โหลดข้อความล็อตแรก
   useEffect(() => {
@@ -124,14 +93,15 @@ export default function ChatPlayground() {
 
     return () => { alive = false; };
   }, [selectedUser]);
+
   // join/leave room เมื่อ conversationId เปลี่ยน
   useEffect(() => {
     if (!conversationId) return;
-    socket.emit("conversation:join", conversationId, () => {});
+    joinConversation(conversationId, () => {});
     return () => {
-      socket.emit("conversation:leave", conversationId, () => {});
+      leaveConversation(conversationId, () => {});
     };
-  }, [socket, conversationId]);
+  }, [joinConversation, leaveConversation, conversationId]);
 
 
   // subscribe รับข้อความใหม่ (ครั้งเดียว) แล้วค่อยกรองด้วย conversationId ปัจจุบัน
@@ -147,6 +117,8 @@ export default function ChatPlayground() {
     };
   }, [socket, conversationId]);
 
+
+  //UPDATE preview sidebar
   useEffect(() => {
   const onConvUpdate = (u) => {
     if (!u?.conversationId) return; // กัน payload แปลก
@@ -160,16 +132,6 @@ export default function ChatPlayground() {
       if (idx === -1) {
         // ทางเลือก A: ไม่ทำอะไร รอรอบถัดไป
         return prev;
-
-        // // ทางเลือก B: สร้างแถวใหม่แบบ placeholder แล้วค่อยเลื่อนขึ้นบน
-        // const placeholder = {
-        //   conversationId: cid,
-        //   peer: { _id: '', name: '(Unknown)', email: '', avatar: null },
-        //   lastMessageText: u.lastMessageText || '',
-        //   lastMessageAt: u.lastMessageAt || new Date().toISOString(),
-        //   unread: 1,
-        // };
-        // return [placeholder, ...prev];
       }
 
       const isActive = String(conversationId) === cid;
@@ -203,13 +165,11 @@ export default function ChatPlayground() {
 }, [socket, conversationId]);
 
 
-
+  // Scroll to bottom Messages
   useEffect(() => {
     if (!listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
-
-
 
   function handleUserClick(user) {
     setSelectedUser(user);
@@ -218,14 +178,13 @@ export default function ChatPlayground() {
       u.conversationId === user.conversationId ? { ...u, unread: 0 } : u
     )
   );
-  socket.emit("message:read", { conversationId: user.conversationId, until: new Date() });
+  markRead({ conversationId: user.conversationId, until: new Date() });
   }
 
   function handleSubmit(e) {
     e.preventDefault();
     if (!message.trim() || !conversationId) return;
-    socket.emit(
-      "message:send",
+    sendMessage(
       { conversationId, text: message },
       (ack) => {
         if (!ack?.ok) {

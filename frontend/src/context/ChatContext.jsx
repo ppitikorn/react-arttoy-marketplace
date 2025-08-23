@@ -1,49 +1,49 @@
-import { createContext, useContext, useState } from 'react';
+// src/context/ChatContext.jsx
+import { createContext, useContext, useEffect, useMemo } from "react";
+import { io } from "socket.io-client";
 
-const ChatContext = createContext();
+const ChatContext = createContext(null);
 
-export const ChatProvider = ({ children }) => {
-  const [chats, setChats] = useState({});
-  const [activeChatId, setActiveChatId] = useState(null);
+export function ChatProvider({ children }) {
+  const getToken = () => localStorage.getItem("token");
 
-  const startChat = (sellerId, productId) => {
-    const chatId = `${sellerId}_${productId}`;
-    if (!chats[chatId]) {
-      setChats(prev => ({
-        ...prev,
-        [chatId]: {
-          messages: [],
-          sellerId,
-          productId,
-          lastUpdated: new Date()
-        }
-      }));
-    }
-    setActiveChatId(chatId);
+  const socket = useMemo(() => {
+    return io(import.meta.env.VITE_API_URL, {
+      auth: { token: getToken() },
+      withCredentials: true,
+      transports: ["websocket"],
+      autoConnect: true,
+    });
+  }, []);
+
+  // auto-join user room (server จะอ่าน userId จาก JWT)
+  useEffect(() => {
+    const onConnect = () => {
+      console.log("Socket connected", socket.id);
+    };
+    socket.on("connect", onConnect);
+    return () => {
+      socket.off("connect", onConnect);
+      socket.disconnect();
+    };
+  }, [socket]);
+
+  // helpers ที่หน้าอื่นเรียกใช้ได้
+  const value = {
+    socket,
+    joinConversation: (conversationId, cb) =>
+      socket.emit("conversation:join", conversationId, cb),
+    leaveConversation: (conversationId, cb) =>
+      socket.emit("conversation:leave", conversationId, cb),
+    sendMessage: (payload, cb) => socket.emit("message:send", payload, cb),
+    markRead: (payload, cb) => socket.emit("message:read", payload, cb),
   };
 
-  const sendMessage = (chatId, message) => {
-    setChats(prev => ({
-      ...prev,
-      [chatId]: {
-        ...prev[chatId],
-        messages: [...prev[chatId].messages, message],
-        lastUpdated: new Date()
-      }
-    }));
-  };
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
+}
 
-  return (
-    <ChatContext.Provider value={{ chats, activeChatId, startChat, sendMessage }}>
-      {children}
-    </ChatContext.Provider>
-  );
-};
-
-export const useChat = () => {
-  const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error('useChat must be used within a ChatProvider');
-  }
-  return context;
-};
+export function useChat() {
+  const ctx = useContext(ChatContext);
+  if (!ctx) throw new Error("useChat must be used within <ChatProvider>");
+  return ctx;
+}
