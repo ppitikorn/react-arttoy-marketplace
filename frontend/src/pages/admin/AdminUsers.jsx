@@ -204,6 +204,7 @@ const AdminUsers = () => {
                         className="h-10 w-10 rounded-full"
                         src={user.avatar || "https://placehold.co/400"}
                         alt={user.name}
+                        referrerPolicy="no-referrer"
                       />
                     </div>
                     <div className="ml-4">
