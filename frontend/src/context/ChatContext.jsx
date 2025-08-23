@@ -1,21 +1,36 @@
 // src/context/ChatContext.jsx
-import { createContext, useContext, useEffect, useMemo, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import { useAuth } from "./AuthContext.jsx";
 
 const ChatContext = createContext(null);
 
-function onceConnected(socket, fn) {
-  if (socket.connected) return fn();
-  const on = () => { socket.off("connect", on); fn(); };
-  socket.on("connect", on);
-}
-
 export function ChatProvider({ children }) {
-  const tokenGetter = () => localStorage.getItem("token");
+  const { token ,user } = useAuth();
+  const socketRef = useRef(null);
+  const [socket, setSocket] = useState(null);
+  // ห้องที่กำลัง active และลำดับคำสั่ง join ล่าสุด (กัน race)
+  const currentCidRef = useRef(null);
+  const joinSeqRef = useRef(0);
 
-  const socket = useMemo(() => {
+  // ---- สร้าง/ทำลาย socket ใหม่ทุกครั้งที่ token เปลี่ยน ----
+  useEffect(() => {
+    // ปิดตัวเก่าก่อน (ตอน logout หรือเปลี่ยนผู้ใช้)
+    if (socketRef.current) {
+      try {
+        socketRef.current.removeAllListeners();
+        socketRef.current.disconnect();
+      } catch {}
+      socketRef.current = null;
+      setSocket(null);
+    }
+
+    // ถ้าไม่มี token (ยังไม่ login) ก็ยังไม่ต้องสร้าง socket
+    if (!token) return;
+
+    // สร้าง socket ใหม่ด้วย token ล่าสุด
     const s = io(import.meta.env.VITE_API_URL, {
-      auth: { token: tokenGetter() },
+      auth: { token },
       withCredentials: true,
       transports: ["websocket"],
       autoConnect: true,
@@ -24,55 +39,64 @@ export function ChatProvider({ children }) {
       reconnectionDelay: 500,
     });
 
-    // logs (ช่วยดีบัก)
-    s.on("connect", () => console.log("[socket] connected", s.id));
-    s.on("reconnect", (n) => console.log("[socket] reconnect", n));
-    s.on("connect_error", (e) => console.error("[socket] connect_error", e?.message || e));
-    s.on("error", (e) => console.error("[socket] error", e));
-
-    return s;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // เก็บห้องปัจจุบัน + token ป้องกันการ join ซ้อน/ค้าง
-  const currentCidRef = useRef(null);
-  const joinSeqRef = useRef(0); // เพิ่มเลขรุ่นของคำสั่ง join ล่าสุด
-
-  // re-join ห้องปัจจุบันอัตโนมัติเมื่อ reconnect
-  useEffect(() => {
-    const onReconnect = () => {
+    // logs / debug
+    s.on("connect", () => {
+      console.log("[socket] connected:", s.id);
+      // ถ้ามีห้องค้างไว้จากก่อนหน้า ให้ re-join อัตโนมัติ
       const cid = currentCidRef.current;
-      if (!cid) return;
-      // ใช้กลไกเดียวกับ joinConversation ด้านล่าง
-      joinConversation(cid);
-    };
-    socket.on("reconnect", onReconnect);
-    return () => socket.off("reconnect", onReconnect);
-  }, [socket]);
+      if (cid) s.emit("conversation:join", cid, () => {});
+    });
+    s.on("reconnect", (n) => {
+      console.log("[socket] reconnect", n);
+      const cid = currentCidRef.current;
+      if (cid) s.emit("conversation:join", cid, () => {});
+    });
+    s.on("connect_error", (e) =>
+      console.error("[socket] connect_error:", e?.message || e)
+    );
+    s.on("error", (e) => console.error("[socket] error:", e));
 
-  // helper join/leave พร้อม ack + timeout + ยกเลิกของเก่า
+    socketRef.current = s;
+    setSocket(s);
+    // cleanup เมื่อ token เปลี่ยนอีกครั้งหรือ unmount
+    return () => {
+      try {
+        s.removeAllListeners();
+        s.disconnect();
+      } catch {}
+    };
+  }, [token,user]);
+
+  // ---- helper ภายใน: รอจน socket ต่อแล้วค่อยทำงาน ----
+  function onceConnected(fn) {
+    if (!socket) return; // ยังไม่มี socket (ยังไม่ login)
+    if (socket.connected) return fn(socket);
+    const on = () => {
+      socket.off("connect", on);
+      fn(socket);
+    };
+    socket.on("connect", on);
+  }
+
+  // ---- API สำหรับหน้าอื่นเรียกใช้ ----
   function joinConversation(conversationId, cb) {
     const cid = String(conversationId);
-    const mySeq = ++joinSeqRef.current;      // รุ่นของคำสั่งครั้งนี้
+    const mySeq = ++joinSeqRef.current; // รุ่นของคำสั่งครั้งนี้
     currentCidRef.current = cid;
 
-    onceConnected(socket, () => {
+    onceConnected((s) => {
       const timeout = setTimeout(() => {
-        if (joinSeqRef.current !== mySeq) return; // คำสั่งเก่าแล้ว
+        if (joinSeqRef.current !== mySeq) return; // คำสั่งนี้ถูกแทนที่แล้ว
         console.warn("[socket] join timeout -> retry", cid);
-        // ลองใหม่อีกรอบ
         joinConversation(cid, cb);
       }, 5000);
 
-      socket.emit("conversation:join", cid, (ack) => {
+      s.emit("conversation:join", cid, (ack) => {
         clearTimeout(timeout);
-        // ถ้าในระหว่างรอ ผู้ใช้เปลี่ยนห้อง → ทิ้ง ack นี้ไป
-        if (joinSeqRef.current !== mySeq) return;
-
+        if (joinSeqRef.current !== mySeq) return; // ข้าม ack เก่าถ้าผู้ใช้เปลี่ยนห้องไปแล้ว
         if (!ack?.ok) {
           console.error("[socket] join failed", cid, ack);
-          cb?.(ack);
-          return;
+          return cb?.(ack);
         }
         console.log("[socket] joined", cid);
         cb?.(ack);
@@ -82,9 +106,8 @@ export function ChatProvider({ children }) {
 
   function leaveConversation(conversationId, cb) {
     const cid = String(conversationId);
-    onceConnected(socket, () => {
-      socket.emit("conversation:leave", cid, (ack) => {
-        // ถ้ากำลังอยู่ห้องนี้จริง ๆ ค่อยเคลียร์ ref
+    onceConnected((s) => {
+      s.emit("conversation:leave", cid, (ack) => {
         if (currentCidRef.current === cid) currentCidRef.current = null;
         cb?.(ack);
       });
@@ -92,19 +115,27 @@ export function ChatProvider({ children }) {
   }
 
   function sendMessage(payload, cb) {
-    onceConnected(socket, () => {
-      socket.emit("message:send", payload, (ack) => cb?.(ack));
+    onceConnected((s) => {
+      s.emit("message:send", payload, (ack) => cb?.(ack));
     });
   }
 
   function markRead(payload, cb) {
-    onceConnected(socket, () => {
-      socket.emit("message:read", payload, (ack) => cb?.(ack));
+    onceConnected((s) => {
+      s.emit("message:read", payload, (ack) => cb?.(ack));
     });
   }
 
   return (
-    <ChatContext.Provider value={{ socket, joinConversation, leaveConversation, sendMessage, markRead }}>
+    <ChatContext.Provider
+      value={{
+        socket,
+        joinConversation,
+        leaveConversation,
+        sendMessage,
+        markRead,
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );

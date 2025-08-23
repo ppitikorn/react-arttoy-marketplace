@@ -10,6 +10,9 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import './App.css';
 
+import ChatPlayground from './pages/chat/ChatPlayground';
+import ScrollToTop from "../src/components/common/ScrollToTop.jsx";
+
 // ------- Lazy pages --------
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/auth/Login'));
@@ -23,7 +26,7 @@ const ProductDetail = lazy(() => import('./pages/marketplace/ProductDetail'));
 const PostProduct = lazy(() => import('./pages/marketplace/PostProduct'));
 const ProductEdit = lazy(() => import('./pages/marketplace/ProductEdit'));
 
-const ChatPlayground = lazy(() => import('./pages/chat/ChatPlayground'));
+// const ChatPlayground = lazy(() => import('./pages/chat/ChatPlayground'));
 
 // Admin area
 const AdminLayout = lazy(() => import('./components/layout/AdminLayout'));
@@ -42,6 +45,7 @@ function App() {
         <ChatProvider>
           <Layout>
             <Suspense fallback={<div className="p-4">Loading…</div>}>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />

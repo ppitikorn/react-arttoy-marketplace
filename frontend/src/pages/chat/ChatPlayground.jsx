@@ -108,6 +108,7 @@ export default function ChatPlayground() {
 
   // subscribe รับข้อความใหม่ (ครั้งเดียว) แล้วค่อยกรองด้วย conversationId ปัจจุบัน
   useEffect(() => {
+    if (!socket) return;   
     const onNew = (msg) => {
       if (String(msg.conversationId) === String(conversationId)) {
         setMessages((prev) => [...prev, msg]);
@@ -122,6 +123,7 @@ export default function ChatPlayground() {
 
   //UPDATE preview sidebar
   useEffect(() => {
+    if (!socket) return;   
   const onConvUpdate = (u) => {
     if (!u?.conversationId) return; // กัน payload แปลก
     setUsers((prev) => {

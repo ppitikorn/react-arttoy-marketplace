@@ -1,75 +1,103 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+// src/context/AuthContext.jsx
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import api from '../utils/api'; // Assuming you have a custom axios instance
+import api from '../utils/api';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // 1) init token จาก localStorage ตั้งแต่แรก
+  const [token, setToken] = useState(() => localStorage.getItem('token') || null);
+  const [user, setUser]   = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // 2) เมื่อ token เปลี่ยน → set/clear header + fetchUser
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUser();
-    } else {
-      setLoading(false);
-    }
-  }, []);
+    let alive = true;
 
-  const fetchUser = async () => {
-    try {
-      const res = await api.get('/api/auth/me'); 
-      setUser(res.data.user);
-      //console.log('User fetched:', res.data.user);
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      localStorage.removeItem('token');
-      delete api.defaults.headers.common['Authorization'];
-    } finally {
-      setLoading(false);
-    }
-  };
+    const applyHeader = (t) => {
+      if (t) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${t}`;
+      } else {
+        delete api.defaults.headers.common['Authorization'];
+      }
+    };
+
+    const run = async () => {
+      applyHeader(token);
+
+      if (!token) {
+        // ไม่มี token = สถานะ guest
+        if (alive) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const res = await api.get('/api/auth/me');
+        if (alive) {
+          setUser(res.data.user);
+        }
+      } catch (err) {
+        console.error('Error fetching user:', err);
+        // token ใช้ไม่ได้ → ล้างทิ้ง
+        localStorage.removeItem('token');
+        applyHeader(null);
+        if (alive) {
+          setToken(null);
+          setUser(null);
+        }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+
+    run();
+    return () => { alive = false; };
+  }, [token]);
 
   const login = async (email, password) => {
     try {
-      const res = await api.post('/api/auth/login', {
-        email,
-        password
-      });
-      
-      const { token, user } = res.data;
-      localStorage.setItem('token', token);
-      setUser(user);
+      const res = await api.post('/api/auth/login', { email, password });
+      const { token: t, user: u } = res.data;
+
+      // เก็บ + ตั้ง header ทันที
+      localStorage.setItem('token', t);
+      api.defaults.headers.common['Authorization'] = `Bearer ${t}`;
+
+      setToken(t);
+      setUser(u);
       return { success: true };
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Invalid email or password'
+        error: error.response?.data?.message || 'Invalid email or password',
       };
     }
   };
+
   const register = async (email, password) => {
     try {
       const username = email.split('@')[0];
       const res = await api.post('/api/auth/register', {
-        email,
-        password,
-        username,
-        name: username
+        email, password, username, name: username,
       });
-      
-      const { token, user } = res.data;
-      localStorage.setItem('token', token);
-      setUser(user);
+
+      const { token: t, user: u } = res.data;
+
+      localStorage.setItem('token', t);
+      api.defaults.headers.common['Authorization'] = `Bearer ${t}`;
+
+      setToken(t);
+      setUser(u);
       return { success: true };
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Registration failed'
+        error: error.response?.data?.message || 'Registration failed',
       };
     }
   };
@@ -78,17 +106,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
+    setToken(null);        // <- กระตุ้นให้ ChatProvider ทำลาย socket ทันที
     navigate('/');
   };
 
-  const value = {
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    setUser
-  };
+  const value = { user, loading, login, register, logout, setUser, token ,setToken};
 
   return (
     <AuthContext.Provider value={value}>
@@ -98,9 +120,7 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 };

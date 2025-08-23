@@ -65,6 +65,21 @@ function initializeSocket(server) {
       console.log(`[socket] join conv:${conversationId} by ${userId}`);
       ackWrap(ack, { ok: true });
     });
+  //   socket.on("conversation:join", async (conversationId, ack) => {
+  //   try {
+  //     // ตรวจสิทธิ์: ผู้ใช้ต้องเป็น participant
+  //     const convo = await Conversation.findById(conversationId).lean();
+  //     if (!convo || !convo.participants.some(p => String(p) === String(userId))) {
+  //       return ack?.({ ok: false, error: "Forbidden" });
+  //     }
+  //     socket.join(`conv:${conversationId}`);
+  //     console.log(`[server] joined conv:${conversationId} uid:${userId}`);
+  //     return ack?.({ ok: true });
+  //   } catch (e) {
+  //     console.error("join error", e);
+  //     return ack?.({ ok: false, error: e.message });
+  //   }
+  // });
 
     socket.on('conversation:leave', (conversationId, ack) => {
       if (!isValidObjectId(conversationId)) return ackWrap(ack, { ok: false, error: 'Invalid conversationId' });

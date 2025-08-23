@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useChat } from '../../context/ChatContext';
 
 const Header = () => {
   const { user, logout } = useAuth();
-  
+  const { socket } = useChat();
+
+  const handleLogout = () => {
+    socket?.disconnect();
+    logout();
+  };
+
   return (
 
      <header className="bg-yellow-200 shadow-lg fixed w-full top-0 z-50">
@@ -43,7 +50,7 @@ const Header = () => {
                   </Link>
                 )}
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="text-black hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium"
                 >
                   Logout
