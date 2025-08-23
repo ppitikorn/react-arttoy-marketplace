@@ -93,14 +93,17 @@ export default function ChatPlayground() {
     return () => { alive = false; };
   }, [selectedUser]);
 
-  // join/leave room เมื่อ conversationId เปลี่ยน
+  //Join Leave Conversation
   useEffect(() => {
-    if (!conversationId) return;
-    joinConversation(conversationId, () => {});
-    return () => {
-      leaveConversation(conversationId, () => {});
-    };
-  }, [joinConversation, leaveConversation, conversationId]);
+  if (!conversationId) return;
+  console.log("[join] try", conversationId);
+  joinConversation(conversationId, (ack) => {
+    console.log("[join ack]", ack);
+  });
+  return () => leaveConversation(conversationId, (ack) => {
+    console.log("[leave ack]", ack);
+  });
+}, [joinConversation, leaveConversation, conversationId]);
 
 
   // subscribe รับข้อความใหม่ (ครั้งเดียว) แล้วค่อยกรองด้วย conversationId ปัจจุบัน
@@ -181,18 +184,15 @@ export default function ChatPlayground() {
   }
 
   function handleSubmit(e) {
-    e.preventDefault();
-    if (!message.trim() || !conversationId) return;
-    sendMessage(
-      { conversationId, text: message },
-      (ack) => {
-        if (!ack?.ok) {
-          alert(ack?.error || "Send failed");
-        }
-      }
-    );
-    setMessage("");
-  }
+  e.preventDefault();
+  const text = message.trim();
+  if (!text || !conversationId) return;
+  sendMessage({ conversationId, text }, (ack) => {
+    console.log("[send ack]", ack);
+    if (!ack?.ok) alert(ack?.error || "Send failed");
+  });
+  setMessage("");
+}
 
   return (
     <div className="flex h-[600px] w-full max-w-5xl mx-auto mt-8 rounded-2xl border bg-white shadow overflow-hidden">
@@ -205,11 +205,11 @@ export default function ChatPlayground() {
         <div className="flex-1 overflow-y-auto">
           {users?.map((u) => {
             const time = fmtTime(u.lastMessageAt);
-            const lasttext = `${u.lastMessageText} · ${time}`;
+            const lasttext = u.lastMessageText ? `${u.lastMessageText} · ${time}` : "";
             return (
               <div
-                key={u.peer?._id}
-                className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-200 ${selectedUser && selectedUser?.peer?._id === u.peer?._id ? "bg-gray-200" : ""}`}
+                key={u?.conversationId}
+                className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-200 ${selectedUser && String(selectedUser?.conversationId) === String(u.conversationId) ? "bg-gray-200" : ""}`}
                 onClick={() => handleUserClick(u)}
             >
               <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg font-bold text-white">
@@ -225,7 +225,7 @@ export default function ChatPlayground() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate text-gray-700">{u.peer?.name}</div>
-                <div className="text-xs text-gray-500 truncate">{u.lastMessageText}</div>
+                <div className="text-xs text-gray-500 truncate">{lasttext}</div>
               </div>
             </div>
             )

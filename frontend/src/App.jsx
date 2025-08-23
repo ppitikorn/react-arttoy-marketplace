@@ -24,7 +24,6 @@ const PostProduct = lazy(() => import('./pages/marketplace/PostProduct'));
 const ProductEdit = lazy(() => import('./pages/marketplace/ProductEdit'));
 
 const ChatPlayground = lazy(() => import('./pages/chat/ChatPlayground'));
-const ChatRoom = lazy(() => import("./pages/chat/ChatRoom"));
 
 // Admin area
 const AdminLayout = lazy(() => import('./components/layout/AdminLayout'));
@@ -84,18 +83,6 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route
-                  path="/chat/:conversationId"
-                  element={
-                    <ProtectedRoute>
-                      <Suspense fallback={<div className="p-4">Loading chat…</div>}>
-                        <ChatRoom />
-                      </Suspense>
-                    </ProtectedRoute>
-                  }
-                />
-
-                {/* Admin nested routes */}
                 <Route
                   path="/admin"
                   element={
