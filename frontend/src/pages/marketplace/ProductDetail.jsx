@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import ReportButton from '../../components/common/ReportButton';
+import ChatButton from '../../components/common/ChatButton';
 import api from '../../utils/api';
 
 const ProductDetail = () => {
@@ -369,9 +370,10 @@ const ProductDetail = () => {
                       )}
                     </button>
                     {/* Contact Button - Temporarily disabled */}
-                    <button
-                      disabled
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-gray-300 text-gray-500 rounded-lg font-medium cursor-not-allowed"
+                    <ChatButton userId={product?.seller?._id} />
+                    {/* <button
+                      onClick={handleChat}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-yellow-300 text-yellow-800 rounded-lg font-medium border-2 border-yellow-800 hover:bg-yellow-400 hover:border-yellow-600 hover:scale-101 transition-transform"
                     >
                       <svg
                         className="w-5 h-5"
@@ -387,8 +389,8 @@ const ProductDetail = () => {
                           d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                         />
                       </svg>
-                      <span>Chat with Seller (Coming Soon)</span>
-                    </button>
+                      <span>Chat</span>
+                    </button> */}
                   </>
                 )}
                 {isSeller && (

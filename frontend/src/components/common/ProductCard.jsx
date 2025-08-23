@@ -117,6 +117,7 @@ function ProductCard({ product , isSold = false}) {
               <img
                 src={product.seller?.avatar}
                 alt={product.seller?.name}
+                referrerPolicy="no-referrer"
                 className="w-6 h-6 rounded-full border border-gray-300"
               />
               <span className="text-sm text-gray-500">{product.seller?.name}</span>
