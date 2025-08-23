@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
+import ChatButton from '../../components/common/ChatButton.jsx';
 import ProductCard from '../../components/common/ProductCard';
 import api from '../../utils/api.js';
 
@@ -187,26 +187,27 @@ const Seller = () => {
                   {/* Action Buttons */}
                   <div className="flex flex-row gap-3 mt-4">
                     {!isOwnProfile && currentUser && (
-                      <button
-                        disabled
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-300 text-gray-500 rounded-lg font-medium cursor-not-allowed"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
-                        <span>Chat with {seller.name} (Coming Soon)</span>
-                      </button>
+                      // <button
+                      //   disabled
+                      //   className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-300 text-gray-500 rounded-lg font-medium cursor-not-allowed"
+                      // >
+                      //   <svg
+                      //     className="w-5 h-5"
+                      //     fill="none"
+                      //     stroke="currentColor"
+                      //     viewBox="0 0 24 24"
+                      //     xmlns="http://www.w3.org/2000/svg"
+                      //   >
+                      //     <path
+                      //       strokeLinecap="round"
+                      //       strokeLinejoin="round"
+                      //       strokeWidth={2}
+                      //       d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      //     />
+                      //   </svg>
+                      //   <span>Chat with {seller.name} (Coming Soon)</span>
+                      // </button>
+                      <ChatButton userId={seller?._id}/>
                     )}
                     
                     {isOwnProfile && (

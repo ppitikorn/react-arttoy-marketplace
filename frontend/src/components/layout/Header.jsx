@@ -23,6 +23,9 @@ const Header = () => {
             <Link to="/products" className="text-black hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium" >
               Products
             </Link>
+            <Link to="/chat" className="text-black hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium" >
+              Chat
+            </Link>
 
             
             {user ? (

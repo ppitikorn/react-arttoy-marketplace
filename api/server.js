@@ -3,9 +3,15 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const passport = require('passport');
 const dotenv = require('dotenv');
+const { createServer } = require('http');
+const initializeSocket = require('./socketServer');
 dotenv.config();
 
 const app = express();
+
+//socket io
+const server = createServer(app);
+initializeSocket(server);
 
 // Middleware
 app.use(cors({
@@ -27,6 +33,7 @@ const tagRoutes = require('./routes/tags');
 const brandRoutes = require('./routes/brand');
 const productRoutes = require('./routes/product');
 const reportRoutes = require('./routes/report');
+const chatRoutes = require('./routes/chat');
 const { authenticateJWT, isAdmin } = require('./middleware/auth');
 
 
@@ -37,6 +44,7 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/brand', brandRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Connect to MongoDB
 const PORT = process.env.PORT || 5000;
@@ -45,7 +53,7 @@ mongoose.connect(process.env.MONGODB_URL)
     .then(() => {
         console.log('Connected to MongoDB successfully');
         // Only start server after successful DB connection
-        app.listen(PORT, () => {
+        server.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
     })
