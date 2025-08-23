@@ -13,7 +13,6 @@ export default function ChatPlayground() {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [conversationId, setConversationId] = useState(null);
-  const [previewMessage, setPreviewMessage] = useState("");
   const listRef = useRef(null);
   const { user } = useAuth(); 
   const me = user?.id;
