@@ -10,11 +10,6 @@ function ProductCard({ product , isSold = false}) {
   if (!hasSeller) console.error('Missing seller:', product);
   if (!hasImages) console.error('Missing images:', product);
 
-
-  
-
-  
-
   return (
     <>
     {isSold ? (

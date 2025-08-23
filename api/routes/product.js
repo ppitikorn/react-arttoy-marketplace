@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateJWT } = require('../middleware/auth');
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const Tag = require('../models/Tag'); 
+const Brand = require("../models/Brand");
 const ProductView = require('../models/ProductView'); // Import the ProductView model
 const { uploadProduct } = require('../middleware/uploadMiddleware'); // Import the upload middleware
 const slugify = require('slugify');
@@ -10,7 +13,7 @@ const { v4: uuidv4 } = require('uuid');
 const { cloudinary } = require('../config/cloudinaryConfig'); // Import Cloudinary config
 const { detectLabels } = require('../config/google-vision'); // Import Google Vision label detection function
 
-// Helper function to extract public ID from Cloudinary URL
+
 const extractPublicId = (cloudinaryUrl) => {
   try {
     // Extract public ID from Cloudinary URL
@@ -35,7 +38,6 @@ const extractPublicId = (cloudinaryUrl) => {
   return null;
 };
 
-// Helper function to delete images from Cloudinary
 const deleteCloudinaryImages = async (imageUrls) => {
   const deletionResults = [];
   
@@ -60,8 +62,6 @@ const deleteCloudinaryImages = async (imageUrls) => {
   return deletionResults;
 };
 
-// Create a new product
-// NEED TO ORGANIZE THIS ROUTE
 function slugifyThai(str) {
   return str.trim()
     .replace(/\s+/g, '-')     // แทนที่ช่องว่างด้วย -
@@ -178,29 +178,198 @@ router.get('/', async (req, res) => {
   }
 });
 
-//Get products by isSold = false status = published // Add filter for published products
+const isValidObjectId = (v) => mongoose.Types.ObjectId.isValid(v);
+
 router.get('/published', async (req, res) => {
   try {
-    const { category, brand, tags, rarity, seller } = req.query;
-    // Build the filter object
-    const filter = {};
-    if (category) filter.category = category;
-    if (brand) filter.brand = brand;
-    if (tags) filter.tags = { $in: tags.split(',') };
-    if (rarity) filter.rarity = rarity;
-    
-    // Filter by seller username
-    if (seller) {
-      const sellerUser = await User.findOne({ username: seller });
-      if (sellerUser) {
-        filter.seller = sellerUser._id;
-      } else {
-        return res.status(200).json([]); // Return empty array if seller not found
+    const {
+      category,
+      condition,
+      brand,
+      tags,           // ← ชื่อแท็กคั่นด้วย comma หรือจะเป็น _id ก็ได้
+      rarity,
+      seller,         // username
+      minPrice,
+      maxPrice,
+      q,
+      limit = 24,
+      cursor,         // ISO date ของ createdAt จากเพจก่อนหน้า
+      lastId,         // (ทางเลือก) _id ของแถวท้ายสุดเพจก่อนหน้า (tie-breaker)
+    } = req.query;
+
+    const lim = Math.min(Number(limit) || 24, 100);
+
+    // ---------- 1) สร้าง filter พื้นฐาน ----------
+    const filter = {
+      status: 'Published',
+      isSold: false,
+    };
+    if (category)  filter.category  = category;
+    if (condition) filter.condition = condition;
+    //if (brand)     filter.brand     = brand;
+    if (rarity)    filter.rarity    = rarity;
+
+    // ราคา (number)
+    const minP = minPrice != null ? Number(minPrice) : null;
+    const maxP = maxPrice != null ? Number(maxPrice) : null;
+    if (Number.isFinite(minP) || Number.isFinite(maxP)) {
+      filter.price = {};
+      if (Number.isFinite(minP)) filter.price.$gte = minP;
+      if (Number.isFinite(maxP)) filter.price.$lte = maxP;
+    }
+      if (brand) {
+  if (!isValidObjectId(brand)) {
+    // กันกรณีส่งค่าพัง ๆ มา จะได้ไม่ query ทั้งคอลเลกชัน
+    return res.status(200).json({ items: [], nextCursor: null });
+  }
+  const brandId = new mongoose.Types.ObjectId(brand);
+
+  // ใช้ $graphLookup หา "ลูกทุกชั้น" ของ brandId
+  const tree = await Brand.aggregate([
+    { $match: { _id: brandId } },
+    {
+      $graphLookup: {
+        from: 'brands',            // ชื่อคอลเลกชันแบรนด์
+        startWith: '$_id',         // เริ่มจาก _id ของแบรนด์นี้
+        connectFromField: '_id',   // ต่อจาก _id ปัจจุบัน
+        connectToField: 'parent',  // ไปยังฟิลด์ parent ของแบรนด์อื่น
+        as: 'descendants',         // เก็บผลไว้ในฟิลด์ชั่วคราว
+        depthField: 'depth'        // (ไม่จำเป็น) อยากรู้ความลึกก็ได้
+      }
+    },
+    {
+      $project: {
+        allIds: {
+          // รวม _id ของตัวเอง + ลูกทั้งหมด
+          $concatArrays: [
+            ['$_id'],
+            { $map: { input: '$descendants', as: 'd', in: '$$d._id' } }
+          ]
+        }
       }
     }
-    const productsBefore = await Product.find({ isSold: false, status: 'Published', ...filter }).populate('seller', 'avatar username name emailVerified');
-    const products = productsBefore.filter(p => p.seller !== null);
-    res.status(200).json(products);
+  ]);
+
+  const brandIds = tree?.[0]?.allIds || [brandId]; // เผื่อกรณีไม่พบ tree
+  filter.brand = { $in: brandIds };
+}
+
+// ---------- 2) seller: username -> _id ----------
+if (seller) {
+  const sellerUser = await User.findOne({ username: seller })
+    .select('_id')
+    .lean();
+      if (!sellerUser) return res.status(200).json({ items: [], nextCursor: null });
+      filter.seller = sellerUser._id;
+    }
+
+    // ---------- 3) tags: name/slug/_id -> tagIds ----------
+    if (tags) {
+      const raw = String(tags)
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (raw.length) {
+        // แบ่งเป็น 2 กลุ่ม: ที่เป็น ObjectId อยู่แล้ว กับที่เป็นชื่อ/slug
+        const asIds  = raw.filter(isValidObjectId).map(id => new mongoose.Types.ObjectId(id));
+        const asText = raw.filter(t => !isValidObjectId(t));
+
+        let tagIds = [...asIds];
+
+        if (asText.length) {
+          // หาแท็กด้วย name หรือ slug (ถ้ามีใน schema)
+          const found = await Tag.find({
+            $or: [
+              { name: { $in: asText } },
+              { slug: { $in: asText.map(t => t.toLowerCase()) } }, // ถ้าไม่มี slug ลบบรรทัดนี้ได้
+            ],
+          }).select('_id').lean();
+
+          tagIds.push(...found.map(d => d._id));
+        }
+
+        // ถ้าหาไม่เจอเลย → return ว่างเร็ว ๆ (จะได้ไม่ query ใหญ่)
+        if (tagIds.length === 0) {
+          return res.status(200).json({ items: [], nextCursor: null });
+        }
+
+        // product.tags เป็น ObjectId[] → ใช้ $in
+        filter.tags = { $in: tagIds };
+      }
+    }
+
+    // ---------- 4) keyword (text search) ----------
+    if (q && q.trim()) {
+      filter.$text = { $search: q.trim() };
+    }
+
+    // ---------- 5) cursor-based pagination ----------
+    const sort = q
+      ? { score: { $meta: 'textScore' }, createdAt: -1, _id: -1 }
+      : { createdAt: -1, _id: -1 };
+
+    const cursorCond = {};
+    if (cursor) {
+      const curDate = new Date(cursor);
+      if (!isNaN(curDate)) {
+        // ใช้ _id เป็น tie-breaker เมื่อ createdAt เท่ากัน
+        cursorCond.$or = [
+          { createdAt: { $lt: curDate } },
+          {
+            createdAt: curDate,
+            _id: { $lt: isValidObjectId(lastId) ? new mongoose.Types.ObjectId(lastId) : new mongoose.Types.ObjectId('ffffffffffffffffffffffff') },
+          },
+        ];
+      }
+    }
+
+    // ---------- 6) pipeline แบบเบา (lookup เฉพาะฟิลด์จำเป็น) ----------
+    const pipeline = [
+      { $match: filter },
+      ...(cursorCond.$or ? [{ $match: cursorCond }] : []),
+
+      { $project: {
+          title: 1,
+          slug: 1,
+          price: 1,
+          images: { $slice: ['$images', 1] },
+          category: 1,
+          brand: 1,
+          tags: 1,
+          condition: 1,
+          rarity: 1,
+          seller: 1,
+          createdAt: 1,
+          ...(q ? { score: { $meta: 'textScore' } } : {}),
+      } },
+
+      { $lookup: {
+          from: 'users',
+          localField: 'seller',
+          foreignField: '_id',
+          as: 'seller',
+          pipeline: [
+            { $project: { _id: 1, username: 1, avatar: 1, name: 1, emailVerified: 1 } },
+          ],
+      } },
+
+      { $match: { seller: { $ne: [] } } },
+      { $unwind: '$seller' },
+      { $sort: sort },
+      { $limit: lim + 1 }, // +1 เพื่อเช็คว่ามีหน้าถัดไปไหม
+    ];
+
+    const docs = await Product.aggregate(pipeline).allowDiskUse(true);
+    const hasNext = docs.length > lim;
+    const items = hasNext ? docs.slice(0, lim) : docs;
+
+    const last = items[items.length - 1];
+    const nextCursor = hasNext && last ? last.createdAt : null;
+    const nextLastId = hasNext && last ? last._id : null;
+
+    // ส่ง lastId กลับไปด้วย (ถ้าจะใช้ tie-breaker ที่ฝั่ง client)
+    res.json({ items, nextCursor, nextLastId });
   } catch (error) {
     console.error('Error fetching published products:', error);
     res.status(500).json({ message: 'Failed to fetch published products' });

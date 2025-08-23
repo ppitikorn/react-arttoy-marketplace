@@ -138,6 +138,7 @@ router.get('/me', authenticateJWT, (req, res) => {
   res.json({
     user: {
       id: req.user._id,
+      avatar: req.user.avatar,
       email: req.user.email,
       username: req.user.username,
       role: req.user.role,
