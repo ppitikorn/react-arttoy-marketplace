@@ -301,15 +301,26 @@ const onPastePlain = (e) => {
 
   // ------------------------ Render ------------------------
   return (
-    <div className="min-h-screen bg-yellow-100 py-8">
-      <div className="flex h-[800px] w-full max-w-none mx-auto mt-8 gap-4 px-50">
+    <div className="min-h-screen bg-yellow-100">
+      <div className={[
+      "mx-auto w-full max-w-[1400px]",
+      "flex flex-col gap-3 px-3 py-4",
+      "sm:px-4 sm:py-6",
+      "md:flex-row md:gap-4 md:px-6 md:py-8",
+    ].join(" ")}>
         {/* Sidebar: User List */}
-        <div className="w-80 rounded-2xl border bg-gray-100 shadow overflow-hidden ">
-        <aside className="w-80 border-r bg-gray-100 flex flex-col">
-          <div className="p-4 border-b bg-gray-100">
-            <h1 className="text-3xl font-semibold text-black">Users</h1>
-          </div>
-          <div className="flex-1 overflow-y-auto bg-gray-100">
+        <div
+      className={[
+        "rounded-2xl border bg-gray-100 shadow overflow-hidden",
+        "w-full md:w-80",          // ✅ มือถือเต็มกว้าง, เดสก์ท็อปกว้างคงที่
+        "flex-shrink-0",           // ✅ กันหดเมื่อพื้นที่คับ
+      ].join(" ")}
+    >
+      <aside className="flex h-full flex-col">
+        <div className="border-b bg-gray-100 px-4 py-3">
+          <h1 className="text-lg font-semibold text-black sm:text-xl">Users</h1>
+        </div>
+          <div className="flex-1 overflow-y-auto bg-gray-100 max-h-[40vh] md:max-h-none">
             {users?.map((u) => {
               const time = fmtTime(u.lastMessageAt);
               const lasttext = u.lastMessageText ? `${u.lastMessageText} · ` : "";
@@ -355,7 +366,12 @@ const onPastePlain = (e) => {
         </div>
 
         {/* Main Chat Container */}
-        <section className="flex-1 flex flex-col rounded-2xl border bg-gray-100 shadow overflow-hidden">
+        <section className={[
+        "flex-1 min-w-0",                         // ✅ กันข้อความดันจนหด
+        "flex flex-col rounded-2xl border bg-gray-100 shadow overflow-hidden",
+        // ✅ ความสูงที่ใช้งานจริงตามจอ: มือถือสั้นลง, เดสก์ท็อปสูงขึ้น
+        "h-[calc(100vh-18rem)] sm:h-[calc(100vh-16rem)] md:h-[calc(100vh-10rem)] lg:h-[calc(100vh-8rem)]",
+      ].join(" ")}>
           {/* Header */}
           <header className="flex items-center justify-between border-b p-4 bg-gray-100">
             <Link to={`/profile/${selectedUser?.peer?.username}`}>
