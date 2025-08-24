@@ -133,8 +133,6 @@ const Seller = () => {
           <ol className="flex items-center space-x-2 text-sm text-gray-800">
             <li><Link to="/" className="hover:text-gray-500">Home</Link></li>
             <li>/</li>
-            <li><Link to="/products" className="hover:text-gray-500">Products</Link></li>
-            <li>/</li>
             <li className="text-black">@{seller.username}</li>
           </ol>
         </nav>
@@ -189,7 +187,8 @@ const Seller = () => {
                     {!isOwnProfile && currentUser && (
                       // <button
                       //   disabled
-                      //   className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-300 text-gray-500 rounded-lg font-medium cursor-not-allowed"
+                      //   className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-300 text-gray-500 rounded-lg 
+                      //   font-medium cursor-not-allowed"
                       // >
                       //   <svg
                       //     className="w-5 h-5"
@@ -213,7 +212,8 @@ const Seller = () => {
                     {isOwnProfile && (
                       <Link
                         to="/profile"
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg
+                         font-medium hover:bg-blue-600 transition-colors"
                       >
                         <svg
                           className="w-5 h-5"
@@ -361,7 +361,8 @@ const Seller = () => {
                 {isOwnProfile && (
                   <Link
                     to="/post-product"
-                    className="bg-[#FF4C4C] hover:bg-red-600 text-white px-6 py-3 rounded-lg transition-colors inline-flex items-center gap-2"
+                    className="bg-[#FF4C4C] hover:bg-red-600 text-white px-6 py-3 rounded-lg transition-colors
+                     inline-flex items-center gap-2"
                   >
                     <svg
                       className="w-5 h-5"
@@ -385,31 +386,10 @@ const Seller = () => {
           </div>
         </div>
 
-        {/* Back Button */}
-        <div className="mt-8 text-center">
-          <Link
-            to="/products"
-            className="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back to Products
-          </Link>
+
         </div>
       </div>
-    </div>
+   
   );
 };
 

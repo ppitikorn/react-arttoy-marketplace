@@ -5,11 +5,11 @@ import api from '../utils/api';
 import ProductCard from '../components/common/ProductCard';
 
 const categories = [
-  { label: 'Figure', value: 'Figure', img: 'https://images.unsplash.com/photo-1577083516271-e0342c0b4f1b?q=80&w=1200&auto=format&fit=crop' },
-  { label: 'Action Figure', value: 'Action Figure', img: 'https://images.unsplash.com/photo-1624298357590-8f2b0b1e2c34?q=80&w=1200&auto=format&fit=crop' },
-  { label: 'Blind Box', value: 'Blind Box', img: 'https://images.unsplash.com/photo-1617957743098-7ef0d0e4c619?q=80&w=1200&auto=format&fit=crop' },
-  { label: 'Plush Toys', value: 'Plush Toys', img: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?q=80&w=1200&auto=format&fit=crop' },
-  { label: 'Art Work', value: 'Art Work', img: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Figure', value: 'Figure', img: 'https://image.makewebcdn.com/makeweb/m_1920x0/yWSGoz9KF/04_POPMART/20240807_141258_889661____5_____1200x1200.jpg' },
+  { label: 'Action Figure', value: 'Action Figure', img: 'https://cdn11.bigcommerce.com/s-csqcv5l47s/images/stencil/804x804/products/2407/5540/CAP_AMERICA_SELECT_1__31656.1744998926.jpg?c=1' },
+  { label: 'Blind Box', value: 'Blind Box', img: 'https://laz-img-sg.alicdn.com/p/e6c256acd0cc63f85698550c609ff414.jpg' },
+  { label: 'Plush Toys', value: 'Plush Toys', img: 'https://m.media-amazon.com/images/I/81ECQgWabfL.jpg' },
+  { label: 'Art Work', value: 'Art Work', img: 'https://media.timeout.com/images/106006274/image.jpg' },
 ];
 
 export default function Home() {
@@ -45,7 +45,7 @@ export default function Home() {
       <section className="relative">
         <div className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
           {<img
-            src="https://images.unsplash.com/photo-1618483008052-9d1a0bfbf2b0?q=80&w=1600&auto=format&fit=crop"
+            src="https://fortunetown.co.th/wp-content/uploads/2023/05/image-5-1024x1024.png"
             alt="hero"
             className="absolute inset-0 w-full h-full object-cover"
           />}
@@ -78,7 +78,7 @@ export default function Home() {
       {/* CATEGORIES */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl sm:text-2xl font-bold">สำรวจตามหมวดหมู่</h2>
+          <h2 className="text-xl sm:text-2xl font-bold ">สำรวจตามหมวดหมู่</h2>
           <Link to="/products" className="text-amber-600 hover:underline text-sm">ดูทั้งหมด</Link>
         </div>
         <div className="flex md:grid md:grid-cols-5 gap-4 overflow-x-auto no-scrollbar pb-2">
@@ -88,8 +88,8 @@ export default function Home() {
               onClick={() => navigate(`/products?category=${encodeURIComponent(c.value)}`)}
               className="min-w-[180px] md:min-w-0 rounded-2xl overflow-hidden bg-white shadow-sm border group text-left"
             >
-              <div className="aspect-[4/3] overflow-hidden">
-                <img src={c.img} alt={c.label} className="w-full h-full object-cover group-hover:scale-105 transition" />
+              <div className="aspect-[1/1] overflow-hidden ">
+                <img src={c.img} alt={c.label} className="w-full h-full object-cover group-hover:scale-100 transition " />
               </div>
               <div className="p-3 font-semibold">{c.label}</div>
             </button>

@@ -301,22 +301,23 @@ const onPastePlain = (e) => {
 
   // ------------------------ Render ------------------------
   return (
-    <div className="min-h-[80vh] py-3 bg-yellow-100">
-      <div className="flex h-[600px] w-full max-w-5xl mx-auto mt-8 rounded-2xl border bg-white shadow overflow-hidden">
+    <div className="min-h-screen bg-yellow-100 py-8">
+      <div className="flex h-[800px] w-full max-w-none mx-auto mt-8 gap-4 px-50">
         {/* Sidebar: User List */}
-        <aside className="w-80 border-r bg-gray-50 flex flex-col">
-          <div className="p-4 border-b">
-            <h1 className="text-3xl font-semibold text-gray-900">Users</h1>
+        <div className="w-80 rounded-2xl border bg-gray-100 shadow overflow-hidden ">
+        <aside className="w-80 border-r bg-gray-100 flex flex-col">
+          <div className="p-4 border-b bg-gray-100">
+            <h1 className="text-3xl font-semibold text-black">Users</h1>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto bg-gray-100">
             {users?.map((u) => {
               const time = fmtTime(u.lastMessageAt);
-              const lasttext = u.lastMessageText ? `${u.lastMessageText} · ${time}` : "";
+              const lasttext = u.lastMessageText ? `${u.lastMessageText} · ` : "";
         
               return (
                 <div
                   key={u?.conversationId}
-                  className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-200 ${
+                  className={`flex items-center gap-3 px-4 py-5 cursor-pointer hover:bg-gray-300  ${
                     selectedUser &&
                     String(selectedUser?.conversationId) === String(u.conversationId)
                       ? "bg-gray-200"
@@ -324,44 +325,48 @@ const onPastePlain = (e) => {
                   }`}
                   onClick={() => handleUserClick(u)}
                 >
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg font-bold text-white overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-lg font-bold text-gray-800">
                     {u.peer?.avatar ? (
                       <img
                         src={u.peer?.avatar}
                         alt={u.peer?.name}
                         referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
+                        className="rounded-full overflow-hidden object-cover"
                       />
                     ) : (
                       u.peer?.name?.[0]
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="">
                     <div className="font-medium truncate text-gray-700">{u.peer?.name}</div>
-                    <div className="text-xs text-gray-500 truncate">{lasttext}</div>
+                  <div className="text-xs text-gray-500">
+                   {lasttext.length > 30 ? lasttext.slice(0, 20) + "..." : lasttext} {<span>{time}</span>}
+              </div>
                   </div>
                   {u.unread > 0 && (
-                    <div className="bg-red-600 text-white text-xs px-1.5 py-0.5 rounded rounded-full">{u.unread}</div>
+                    <div className="bg-red-600 text-white text-xs px-1.5 py-0.5 rounded rounded-full ">{u.unread}</div>
                   )}
                 </div>
               );
             })}
           </div>
+          
         </aside>
+        </div>
 
         {/* Main Chat Container */}
-        <section className="flex-1 flex flex-col">
+        <section className="flex-1 flex flex-col rounded-2xl border bg-gray-100 shadow overflow-hidden">
           {/* Header */}
-          <header className="flex items-center justify-between border-b p-4 bg-white">
+          <header className="flex items-center justify-between border-b p-4 bg-gray-100">
             <Link to={`/profile/${selectedUser?.peer?.username}`}>
               <div className="flex items-center gap-3 p-1">
-                <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-lg font-bold text-white overflow-hidden">
+                <div className="w-10 h-10 rounded-full bg-yellow-300 flex items-center justify-center text-lg font-bold text-gray-800">
                   {selectedUser?.peer?.avatar ? (
                     <img
                       src={selectedUser?.peer?.avatar}
                       alt={selectedUser?.peer?.name}
                       referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
+                      className="rounded-full"
                     />
                   ) : (
                     selectedUser?.peer?.name?.[0]
@@ -381,7 +386,7 @@ const onPastePlain = (e) => {
           </div>
 
           {/* Messages */}
-          <ul className="flex-1 overflow-y-auto p-6 space-y-0.5" ref={listRef}>
+          <ul className="flex-1 overflow-y-auto p-6 space-y-3 bg-white" ref={listRef}>
           {messages.map((m, idx) => {
             const time = fmtTime(m.createdAt);
             const isMine = String(m.senderId) === String(me);
@@ -397,7 +402,7 @@ const onPastePlain = (e) => {
                 key={m?._id}
                 className={`flex ${isMine ? "justify-end" : "justify-start"}`}
               >
-                <div className="flex flex-col max-w-[80%] gap-1">
+                <div className="flex flex-col max-w-[80%]">
                   {/* รูปภาพ */}
                   {hasImages && (
                     <div
@@ -462,7 +467,7 @@ const onPastePlain = (e) => {
         </ul>
 
           {/* Send Message */}
-          <form onSubmit={handleSubmit} className="flex items-end gap-2 border-t p-4 bg-white">
+          <form onSubmit={handleSubmit} className="flex items-center gap-2 border-t p-4 bg-white">
           {/* ปุ่มเลือกรูป */}
           <label
             className={`p-2 text-gray-800 text-2xl hover:text-indigo-600 cursor-pointer shrink-0 ${
@@ -483,7 +488,7 @@ const onPastePlain = (e) => {
 
           {/* กล่องพิมพ์ + พรีวิวรูป (อยู่ข้างในกล่องเดียวกัน) */}
           <div className="flex-1">
-            <div className="rounded-2xl border border-gray-300 bg-gray-50 px-3 py-2">
+            <div className="rounded-2xl border border-gray-300 bg-gray-50 px-2 py-2">
               {/* แถวพรีวิวรูป */}
               {pendingImages.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -539,7 +544,7 @@ const onPastePlain = (e) => {
           {/* ปุ่มส่ง */}
           <button
             type="submit"
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 shrink-0"
+            className="rounded-xl bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 "
             disabled={uploading || (!message.trim() && pendingImages.length === 0)}
           >
             ส่ง
@@ -547,6 +552,7 @@ const onPastePlain = (e) => {
         </form>
         </section>
       </div>
+      
     </div>
   );
 }
