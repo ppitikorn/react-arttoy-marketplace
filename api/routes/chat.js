@@ -1,14 +1,13 @@
-// POST /conversation
-// GET /conversations
-// GET /messages
-// req.user in participant
+// routes/chat.js
 const express = require('express');
 const router = express.Router();
 const { authenticateJWT, isAdmin } = require('../middleware/auth');
 const User = require('../models/User');
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
+const { getIO } = require('../socketServer');
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
 
 // helper: คืนค่า string id ไม่ว่าจะเป็น ObjectId, เอกสารที่มี _id, หรือ string
 function idOf(p) {
@@ -185,8 +184,12 @@ router.post('/messages', authenticateJWT, async (req, res) => {
     $inc: { [`unread.${other}`]: 1 },
   });
 
-  // ปล่อย socket
-  req.io.to(conversationId.toString()).emit('message', {
+  // === ยิง realtime เข้าห้องส่วนตัวของผู้รับ ===
+  const io = getIO();            // หรือใช้ req.io ถ้านายแนบมาแล้ว
+    if (io && notify) {
+      io.to(`user:${other}`).emit('notify', notify);
+    }
+  io.to(`conv:${conversationId}`).emit('message:new', {
     _id: msg._id,
     conversationId,
     senderId: me,
@@ -194,6 +197,17 @@ router.post('/messages', authenticateJWT, async (req, res) => {
     images,
     createdAt: msg.createdAt,
   });
+  const notify = await createNotification({
+      recipient: other,            // userId อีกฝั่ง (string)
+      actor: me,                   // เรา (คนส่ง)
+      type: 'message',
+      title: 'ข้อความใหม่',
+      body: text || (images?.length ? '[image]' : ''),
+      refModel: 'Conversation',
+      refId: conversationId,
+      collapseKey: `msg:${conversationId}`,
+    });
+
 
   res.json(msg);
 });

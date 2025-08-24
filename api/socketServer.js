@@ -4,10 +4,13 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const Conversation = require('./models/Conversation');
 const Message = require('./models/Message');
+const { createNotification } = require('./services/notifyService');
 
 function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(id);
 }
+
+let ioRef = null;
 
 function initializeSocket(server) {
   const io = new Server(server, {
@@ -65,21 +68,6 @@ function initializeSocket(server) {
       console.log(`[socket] join conv:${conversationId} by ${userId}`);
       ackWrap(ack, { ok: true });
     });
-  //   socket.on("conversation:join", async (conversationId, ack) => {
-  //   try {
-  //     // ตรวจสิทธิ์: ผู้ใช้ต้องเป็น participant
-  //     const convo = await Conversation.findById(conversationId).lean();
-  //     if (!convo || !convo.participants.some(p => String(p) === String(userId))) {
-  //       return ack?.({ ok: false, error: "Forbidden" });
-  //     }
-  //     socket.join(`conv:${conversationId}`);
-  //     console.log(`[server] joined conv:${conversationId} uid:${userId}`);
-  //     return ack?.({ ok: true });
-  //   } catch (e) {
-  //     console.error("join error", e);
-  //     return ack?.({ ok: false, error: e.message });
-  //   }
-  // });
 
     socket.on('conversation:leave', (conversationId, ack) => {
       if (!isValidObjectId(conversationId)) return ackWrap(ack, { ok: false, error: 'Invalid conversationId' });
@@ -163,6 +151,26 @@ function initializeSocket(server) {
           });
           console.log(`[Socket Private] conversation:update ${pid}`);
         }
+        for (const p of convo.participants) {
+            const pid = p.toString();
+            if (pid === userId) continue; // ข้ามตัวเอง
+
+            const notif = await createNotification({
+              recipient: pid,
+              actor: userId,
+              type: 'message',
+              title: 'ข้อความใหม่',
+              body: text || (images.length ? '[image]' : ''),
+              refModel: 'Conversation',
+              refId: conversationId,
+              collapseKey: `msg:${conversationId}`,
+            });
+
+            if (notif) {
+              io.to(`user:${pid}`).emit('notify', notif); // ยิงเข้า private room
+              console.log(`[Socket Private] notify ${pid} title=${notif.title}`);
+            }
+          }
 
 
         ackWrap(ack, { ok: true, message: payload });
@@ -217,8 +225,14 @@ function initializeSocket(server) {
       console.log('[socket] disconnected', socket.id, 'reason=', reason);
     });
   });
+  ioRef = io;
 
   return io;
 }
 
+function getIO() {
+  return ioRef;
+}
+
 module.exports = initializeSocket;
+module.exports.getIO = getIO;

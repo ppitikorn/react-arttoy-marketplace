@@ -12,6 +12,8 @@ const slugify = require('slugify');
 const { v4: uuidv4 } = require('uuid');
 const { cloudinary } = require('../config/cloudinaryConfig'); // Import Cloudinary config
 const { detectLabels } = require('../config/google-vision'); // Import Google Vision label detection function
+const { createNotification } = require('../services/notifyService');
+const { getIO } = require('../socketServer');
 
 
 const extractPublicId = (cloudinaryUrl) => {
@@ -524,122 +526,236 @@ router.patch('/:slug/sold', authenticateJWT, async (req, res) => {
   }
 });
 
-// Delete a product by slug
-router.delete('/:slug', authenticateJWT, async (req, res) => {
+// // Delete a product by slug
+// router.delete('/:slug', authenticateJWT, async (req, res) => {
+//   try {
+//     const { slug } = req.params;
+//     const userId = req.user._id;
+    
+//     const product = await Product.findOne({ slug });
+//     if (!product) {
+//       return res.status(404).json({ message: 'Product not found' });
+//     }
+
+//     // Check if user is the seller
+//     if (!product.seller.equals(userId)) {
+//       console.log('Unauthorized delete attempt by user:', userId);
+//       console.log('Product seller ID:', product.seller);
+//       return res.status(403).json({ message: 'Unauthorized access' });
+//     }
+
+//     // Delete all product images from Cloudinary
+//     if (product.images && product.images.length > 0) {
+//       console.log('Deleting all product images from Cloudinary:', product.images);
+//       try {
+//         const deletionResults = await deleteCloudinaryImages(product.images);
+//         console.log('Cloudinary deletion results:', deletionResults);
+//       } catch (error) {
+//         console.error('Error deleting product images from Cloudinary:', error);
+//         // Continue with product deletion even if image deletion fails
+//       }
+//     }
+
+//     // Delete the product from database
+//     await Product.findOneAndDelete({ slug });
+    
+//     res.status(200).json({ 
+//       message: 'Product deleted successfully',
+//       deletedProduct: {
+//         title: product.title,
+//         slug: product.slug
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Error deleting product:', error);
+//     res.status(500).json({ 
+//       message: 'Failed to delete product',
+//       error: error.message 
+//     });
+//   }
+// });
+
+// // Toggle like/unlike product
+// router.post('/:slug/like', authenticateJWT, async (req, res) => {
+//   try {
+//     const { slug } = req.params;
+//     const userId = req.user._id;
+//     console.log('User ID:', userId);
+
+//     const product = await Product.findOne({ slug });
+//     if (!product) {
+//       return res.status(404).json({ message: 'Product not found' });
+//     }
+
+//     // Check if user already liked the product
+//     const isLiked = product.likes.includes(userId);
+
+//     if (isLiked) {
+//       // Unlike: Remove user from product's likes array
+//       product.likes = product.likes.filter(id => id.toString() !== userId.toString());
+      
+//       // Also remove product from user's liked products (if you implement User model update)
+//       await User.findByIdAndUpdate(userId, {
+//         $pull: { likedProducts: product._id }
+//       });
+//     } else {
+//       // Like: Add user to product's likes array
+//       product.likes.push(userId);
+      
+//       // Also add product to user's liked products (if you implement User model update)
+//       await User.findByIdAndUpdate(userId, {
+//         $addToSet: { likedProducts: product._id }
+//       });
+//     }
+
+//     await product.save();
+
+//     res.json({
+//       success: true,
+//       isLiked: !isLiked,
+//       likesCount: product.likes.length,
+//       message: isLiked ? 'Product unliked' : 'Product liked'
+//     });
+//   } catch (error) {
+//     console.error('Like toggle error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+// // Get like status for a product (optional - for checking current state)
+// router.get('/:slug/like-status', authenticateJWT, async (req, res) => {
+//   try {
+//     const { slug } = req.params;
+//     const userId = req.user._id;
+
+//     const product = await Product.findOne({ slug });
+//     if (!product) {
+//       return res.status(404).json({ message: 'Product not found' });
+//     }
+
+//     const isLiked = product.likes.includes(userId);
+
+//     res.json({
+//       isLiked,
+//       likesCount: product.likes.length
+//     });
+//   } catch (error) {
+//     console.error('Get like status error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+// LIKE (idempotent) - PUT /api/products/:slug/like
+router.put('/:slug/like', authenticateJWT, async (req, res) => {
   try {
     const { slug } = req.params;
-    const userId = req.user._id;
-    
-    const product = await Product.findOne({ slug });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    const userId = req.user._id.toString();
 
-    // Check if user is the seller
-    if (!product.seller.equals(userId)) {
-      console.log('Unauthorized delete attempt by user:', userId);
-      console.log('Product seller ID:', product.seller);
-      return res.status(403).json({ message: 'Unauthorized access' });
-    }
+    // ต้องใช้ title+seller เพื่อแจ้งเตือน
+    const product = await Product.findOne({ slug })
+      .select('_id title seller likes')
+      .lean();
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Delete all product images from Cloudinary
-    if (product.images && product.images.length > 0) {
-      console.log('Deleting all product images from Cloudinary:', product.images);
-      try {
-        const deletionResults = await deleteCloudinaryImages(product.images);
-        console.log('Cloudinary deletion results:', deletionResults);
-      } catch (error) {
-        console.error('Error deleting product images from Cloudinary:', error);
-        // Continue with product deletion even if image deletion fails
-      }
-    }
+    const sellerId = product.seller?.toString();
+    const isOwner = sellerId === userId;
 
-    // Delete the product from database
-    await Product.findOneAndDelete({ slug });
-    
-    res.status(200).json({ 
-      message: 'Product deleted successfully',
-      deletedProduct: {
-        title: product.title,
-        slug: product.slug
-      }
-    });
-  } catch (error) {
-    console.error('Error deleting product:', error);
-    res.status(500).json({ 
-      message: 'Failed to delete product',
-      error: error.message 
-    });
-  }
-});
+    // ใส่ไลค์แบบ idempotent
+    const upd = await Product.updateOne(
+      { _id: product._id },
+      { $addToSet: { likes: userId } }
+    );
 
-// Toggle like/unlike product
-router.post('/:slug/like', authenticateJWT, async (req, res) => {
-  try {
-    const { slug } = req.params;
-    const userId = req.user._id;
-    console.log('User ID:', userId);
+    // (ออปชัน) sync ไปที่โปรไฟล์ผู้ใช้
+    await User.updateOne(
+      { _id: userId },
+      { $addToSet: { likedProducts: product._id } }
+    ).catch(() => {});
 
-    const product = await Product.findOne({ slug });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    // Check if user already liked the product
-    const isLiked = product.likes.includes(userId);
-
-    if (isLiked) {
-      // Unlike: Remove user from product's likes array
-      product.likes = product.likes.filter(id => id.toString() !== userId.toString());
-      
-      // Also remove product from user's liked products (if you implement User model update)
-      await User.findByIdAndUpdate(userId, {
-        $pull: { likedProducts: product._id }
+    // ถ้าเพิ่งถูกเพิ่มจริง → ค่อยแจ้งเตือนผู้ขาย (และไม่แจ้งเตือนถ้าตัวเองคือเจ้าของ)
+    if (!isOwner && sellerId && upd.modifiedCount === 1) {
+      const notif = await createNotification({
+        recipient: sellerId,
+        actor: userId,
+        type: 'like',
+        title: 'มีคนถูกใจสินค้าของคุณ',
+        body: product.title ? `มีคนถูกใจ: ${product.title}` : '',
+        refModel: 'Product',
+        refId: product._id,
+        collapseKey: `like:${product._id}:${userId}`, // กันสแปมต่อคน-ต่อสินค้า
       });
-    } else {
-      // Like: Add user to product's likes array
-      product.likes.push(userId);
-      
-      // Also add product to user's liked products (if you implement User model update)
-      await User.findByIdAndUpdate(userId, {
-        $addToSet: { likedProducts: product._id }
-      });
+
+      const io = getIO && getIO();
+      if (io && notif) io.to(`user:${sellerId}`).emit('notify', notif);
     }
 
-    await product.save();
-
-    res.json({
+    const fresh = await Product.findById(product._id).select('likes').lean();
+    return res.json({
       success: true,
-      isLiked: !isLiked,
-      likesCount: product.likes.length,
-      message: isLiked ? 'Product unliked' : 'Product liked'
+      isLiked: true,
+      likesCount: fresh?.likes?.length || 0,
+      message: 'Product liked',
     });
   } catch (error) {
-    console.error('Like toggle error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('PUT like error:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get like status for a product (optional - for checking current state)
+// UNLIKE (idempotent) - DELETE /api/products/:slug/like
+router.delete('/:slug/like', authenticateJWT, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user._id.toString();
+
+    const product = await Product.findOne({ slug })
+      .select('_id likes')
+      .lean();
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    const upd = await Product.updateOne(
+      { _id: product._id },
+      { $pull: { likes: userId } }
+    );
+
+    // (ออปชัน) sync โปรไฟล์ผู้ใช้
+    await User.updateOne(
+      { _id: userId },
+      { $pull: { likedProducts: product._id } }
+    ).catch(() => {});
+
+    const fresh = await Product.findById(product._id).select('likes').lean();
+    return res.json({
+      success: true,
+      isLiked: false,
+      likesCount: fresh?.likes?.length || 0,
+      message: 'Product unliked',
+      // tip: upd.modifiedCount === 1 แปลว่าเพิ่งเอาออกจริง
+    });
+  } catch (error) {
+    console.error('DELETE like error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// CHECK like status - GET /api/products/:slug/like-status
 router.get('/:slug/like-status', authenticateJWT, async (req, res) => {
   try {
     const { slug } = req.params;
-    const userId = req.user._id;
+    const userId = req.user._id.toString();
 
-    const product = await Product.findOne({ slug });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    const product = await Product.findOne({ slug })
+      .select('_id likes')
+      .lean();
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    const isLiked = product.likes.includes(userId);
-
-    res.json({
+    const isLiked = (product.likes || []).some(id => id.toString() === userId);
+    return res.json({
       isLiked,
-      likesCount: product.likes.length
+      likesCount: product.likes?.length || 0,
     });
   } catch (error) {
     console.error('Get like status error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -778,6 +894,7 @@ router.get('/randoms/item', async (req, res) => {
       { $sample: { size: lim } },  // สุ่มหลังจากกรองแล้ว -> เร็วกว่า
       { $project: {
           title: 1,
+          slug: 1,
           price: 1,
           images: { $slice: ['$images', 1] },
           category: 1,
