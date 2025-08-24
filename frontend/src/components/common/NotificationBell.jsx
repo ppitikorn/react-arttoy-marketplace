@@ -44,8 +44,24 @@ export default function NotificationBell() {
           api.get("/api/notifications/count"),
         ]);
         if (!mounted) return;
-        setItems(Array.isArray(list.items) ? list.items : []);
-        setUnread(typeof c.count === "number" ? c.count : 0);
+        // setItems(Array.isArray(list.items) ? list.items : []);
+        // const uniq = [];
+        //   const seen = new Set();
+        //   for (const it of (Array.isArray(list.items) ? list.items : [])) {
+        //     if (!seen.has(it._id)) { seen.add(it._id); uniq.push(it); }
+        //   }
+        //   setItems(uniq);
+
+        // setUnread(typeof c.count === "number" ? c.count : 0);
+        const raw = Array.isArray(list.items) ? list.items : [];
+        const uniq = [];
+        const seen = new Set();
+        for (const it of raw) {
+          if (!seen.has(it._id)) { seen.add(it._id); uniq.push(it); }
+        }
+        setItems(uniq);
+        // sync ตัวเลข unread ให้ตรงรายการล่าสุด
+        setUnread(uniq.reduce((acc, x) => acc + (x.isRead ? 0 : 1), 0));
       } catch (e) {
         console.error("load notifications error:", e);
       } finally {
@@ -61,9 +77,15 @@ export default function NotificationBell() {
   useEffect(() => {
     if (!token || !socket) return;
     const onNotify = (notif) => {
-      setItems((prev) => [notif, ...prev]);
-      if (!notif.isRead) setUnread((u) => u + 1);
-    };
+    // 1) แทนที่ตัวเดิม + ย้ายขึ้นบน
+    setItems((prev) => {
+      const next = [notif, ...prev.filter((x) => x._id !== notif._id)];
+      // 2) คำนวณ unread ใหม่จาก next (ไม่สะสมมั่ว)
+      const unreadNext = next.reduce((acc, x) => acc + (x.isRead ? 0 : 1), 0);
+      setUnread(unreadNext);
+      return next;
+    });
+  };
     socket.on("notify", onNotify);
     return () => socket.off("notify", onNotify);
   }, [token, socket]);
@@ -115,8 +137,9 @@ export default function NotificationBell() {
     if (n.refModel === "Conversation" && n.refId) {
       navigate(`/chat?conv=${n.refId}`);
       setOpen(false);
-    } else if (n.refModel === "Product" && n.refId) {
-      navigate(`/products/${n.refId}`); // ถ้าใช้ slug ให้ปรับ path
+    } else if (n.refModel === "Product" && n.refSlug) {
+      console.log(n);
+      navigate(`/products/${n.refSlug}`); // ถ้าใช้ slug ให้ปรับ path
       setOpen(false);
     }
   }
@@ -175,7 +198,7 @@ export default function NotificationBell() {
                     key={n._id}
                     role="menuitem"
                     title="คลิกเพื่อมาร์คว่าอ่านแล้ว"
-                    onClick={() => handleItemClick(n)}
+                    onClick={() => {handleItemClick(n),console.log(n);}}
                     className={`cursor-pointer border-b border-slate-100 p-2.5 transition ${
                       busy
                         ? "cursor-wait"
