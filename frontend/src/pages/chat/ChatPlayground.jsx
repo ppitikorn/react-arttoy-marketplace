@@ -28,6 +28,56 @@ export default function ChatPlayground() {
   const fmtTime = (d) =>
     d ? new Date(d).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) : "";
 
+  const textareaRef = useRef(null);
+
+// ฟังก์ชันช่วย: auto-resize
+const autosize = (el) => {
+  if (!el) return;
+  el.style.height = '0px';          // รีเซ็ตก่อน
+  el.style.height = el.scrollHeight + 'px'; // ขยายตามเนื้อหา
+};
+
+// เรียก autosize เมื่อ message เปลี่ยน (กันกรณี set จากภายนอก)
+useEffect(() => {
+  autosize(textareaRef.current);
+}, [message]);
+
+// handler: กด Enter เพื่อส่ง, Shift+Enter เพิ่มบรรทัด
+const onKeyDownMessage = (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!uploading && (message.trim() || pendingImages.length > 0)) {
+      handleSubmit(e); // ใช้ของเดิม
+    }
+  }
+};
+
+// handler: แปะข้อความแบบ plain text และคงบรรทัด \n
+const onPastePlain = (e) => {
+  const text = e.clipboardData.getData('text');
+  if (!text) return;
+  e.preventDefault();
+
+  // normalize บรรทัด CRLF -> LF และลบช่องว่างท้ายบรรทัดที่ยาวผิดปกติ
+  const normalized = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[ \t]+\n/g, '\n');
+
+  const el = textareaRef.current;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+
+  const newValue = message.slice(0, start) + normalized + message.slice(end);
+  setMessage(newValue);
+
+  // ย้าย caret ไปต่อท้ายส่วนที่แปะ
+  requestAnimationFrame(() => {
+    el.selectionStart = el.selectionEnd = start + normalized.length;
+    autosize(el);
+  });
+};
+
   // ------------------------ Track Read Message------------------------
   useEffect(() => {
     if (!endRef.current) return;
@@ -382,7 +432,7 @@ export default function ChatPlayground() {
                   {m.text && (
                     <div
                       className={[
-                        "rounded-2xl px-4 py-2 text-sm inline-block max-w-full break-words",
+                        "rounded-2xl px-4 py-2 text-sm inline-block max-w-full whitespace-pre-wrap break-words",
                         isMine
                           ? "bg-yellow-300 text-gray-900 self-end"
                           : "bg-gray-100 text-gray-800 self-start",
@@ -461,13 +511,28 @@ export default function ChatPlayground() {
               )}
 
               {/* ช่องพิมพ์ข้อความ */}
-              <input
+              {/* <input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={uploading ? "กำลังอัปโหลดรูป…" : "พิมพ์ข้อความ…"}
                 className="w-full bg-transparent outline-none text-sm text-black placeholder:text-gray-400"
                 disabled={uploading}
+              /> */}
+              <textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  autosize(e.target);
+                }}
+                onKeyDown={onKeyDownMessage}
+                onPaste={onPastePlain}
+                placeholder={uploading ? "กำลังอัปโหลดรูป…" : "พิมพ์ข้อความ…"}
+                className="w-full bg-transparent outline-none text-sm text-black placeholder:text-gray-400 resize-none leading-5 max-h-48"
+                rows={1}
+                disabled={uploading}
               />
+
             </div>
           </div>
 
