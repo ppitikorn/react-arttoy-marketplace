@@ -81,7 +81,7 @@ export default function Header() {
             onClick={() => setOpen(false)}
           >
             <img
-              src="/src/assets/image-Photoroom.png"
+              src={"/src/assets/image-Photoroom.png" ||"src/assets/mytoyverselogo.png"}
               className="h-10 w-10 object-contain"
               alt="Arttoy Marketplace"
             />
@@ -194,13 +194,12 @@ export default function Header() {
               >
                 <FaSignOutAlt /> Logout
               </button>
-
               <div className="flex items-center gap-2 px-3 py-2 mt-1">
                 {Avatar}
                 <div className="text-sm text-black/80 truncate">
                   {user?.name || user?.username}
                 </div>
-              </div>
+              </div>             
             </>
           ) : (
             <Link

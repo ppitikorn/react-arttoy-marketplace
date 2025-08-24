@@ -761,5 +761,50 @@ router.get('/:slug/analytics', authenticateJWT, async (req, res) => {
     res.status(500).json({ message: 'Failed to get analytics' });
   }
 });
+// Get random products
+router.get('/randoms/item', async (req, res) => {
+  try {
+    let { limit = 8 } = req.query;
+    const lim = Math.min(Math.max(parseInt(limit) || 8, 1), 20);
+
+    // เงื่อนไขพื้นฐาน
+    const match = {
+      status: 'Published',
+      isSold: false,
+    };
+
+    const pipeline = [
+      { $match: match },
+      { $sample: { size: lim } },  // สุ่มหลังจากกรองแล้ว -> เร็วกว่า
+      { $project: {
+          title: 1,
+          price: 1,
+          images: { $slice: ['$images', 1] },
+          category: 1,
+          brand: 1,
+          rarity: 1,
+          condition: 1,
+          seller: 1,
+          createdAt: 1,
+        }
+      },
+      { $lookup: {
+          from: 'users',
+          localField: 'seller',
+          foreignField: '_id',
+          as: 'seller',
+          pipeline: [{ $project: { _id: 1, username: 1, name: 1, avatar: 1 } }]
+      }},
+      { $match: { seller: { $ne: [] } } },
+      { $unwind: '$seller' },
+    ];
+
+    const docs = await Product.aggregate(pipeline).allowDiskUse(true); 
+    return res.json({ items: docs });
+  } catch (err) {
+    console.error('random products error:', err);
+    res.status(500).json({ message: 'Failed to fetch random products' });
+  }
+});
 
 module.exports = router;

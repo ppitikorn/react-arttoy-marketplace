@@ -1,61 +1,119 @@
-import { useNavigate } from 'react-router-dom';
+// src/pages/Home.jsx
+import { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../utils/api';
+import ProductCard from '../components/common/ProductCard';
 
-const Home = () => {
+const categories = [
+  { label: 'Figure', value: 'Figure', img: 'https://images.unsplash.com/photo-1577083516271-e0342c0b4f1b?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Action Figure', value: 'Action Figure', img: 'https://images.unsplash.com/photo-1624298357590-8f2b0b1e2c34?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Blind Box', value: 'Blind Box', img: 'https://images.unsplash.com/photo-1617957743098-7ef0d0e4c619?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Plush Toys', value: 'Plush Toys', img: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?q=80&w=1200&auto=format&fit=crop' },
+  { label: 'Art Work', value: 'Art Work', img: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop' },
+];
+
+export default function Home() {
   const navigate = useNavigate();
+  const [rand, setRand] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await api.get('/api/products/randoms/item', { signal: ctrl.signal });
+        const items = Array.isArray(res.data?.items) ? res.data.items : [];
+        setRand(items);
+      } catch (e) {
+      // ✅ เงื่อนไขมอง cancel เป็นเคสปกติ
+      if (axios.isCancel?.(e) || e?.code === 'ERR_CANCELED' || e?.name === 'CanceledError') {
+        // เงียบไว้ ไม่ต้อง log
+      } else {
+        console.error('randoms error:', e);
+      }
+    } finally {
+      setLoading(false);
+    }
+  })();
+    return () => ctrl.abort();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Hero Section */}
-      <div className="relative min-h-[60vh] flex items-center bg-cover bg-center bg-no-repeat" 
-           style={{ backgroundImage: 'url(https://source.unsplash.com/random/?toys)'}}>
-        <div className="absolute inset-0 bg-black bg-opacity-60"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-white">
-          <h1 className="text-5xl font-bold mb-4">
-            Welcome to Arttoy Marketplace
-          </h1>
-          <p className="text-xl mb-8">
-            Discover unique art toys from creators around the world
-          </p>
-          <button
-            onClick={() => navigate('/login')}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300"
-          >
-            Get Started
-          </button>
+    <div className="min-h-screen bg-yellow-50 text-gray-900">
+      {/* HERO */}
+      <section className="relative">
+        <div className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
+          {<img
+            src="https://images.unsplash.com/photo-1618483008052-9d1a0bfbf2b0?q=80&w=1600&auto=format&fit=crop"
+            alt="hero"
+            className="absolute inset-0 w-full h-full object-cover"
+          />}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/60" />
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-white text-center">
+            <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight">
+              ค้นพบของเล่นศิลป์ที่ยูนีคจากศิลปินทั่วโลก
+            </h1>
+            <p className="mt-4 text-base sm:text-lg text-gray-100">
+              ซื้อ–ขายอย่างมั่นใจ | คอมมิวนิตี้คนรักอาร์ตทอย
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => navigate('/products')}
+                className="inline-flex items-center justify-center rounded-xl bg-amber-400 text-black font-semibold px-6 py-3 hover:bg-amber-300 transition"
+              >
+                สำรวจสินค้า
+              </button>
+              <button
+                onClick={() => navigate('/post-product')}
+                className="inline-flex items-center justify-center rounded-xl bg-white/10 backdrop-blur px-6 py-3 hover:bg-white/20 transition border border-white/30"
+              >
+                ลงขายผลงาน
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4 text-white">
-              Unique Collections
-            </h2>
-            <p className="text-gray-300">
-              Explore one-of-a-kind art toys created by talented artists worldwide.
-            </p>
-          </div>
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4 text-white">
-              Secure Transactions
-            </h2>
-            <p className="text-gray-300">
-              Buy and sell with confidence using our secure payment system.
-            </p>
-          </div>
-          <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4 text-white">
-              Artist Community
-            </h2>
-            <p className="text-gray-300">
-              Join a vibrant community of art toy creators and collectors.
-            </p>
-          </div>
+      {/* CATEGORIES */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold">สำรวจตามหมวดหมู่</h2>
+          <Link to="/products" className="text-amber-600 hover:underline text-sm">ดูทั้งหมด</Link>
         </div>
-      </div>
+        <div className="flex md:grid md:grid-cols-5 gap-4 overflow-x-auto no-scrollbar pb-2">
+          {categories.map((c) => (
+            <button
+              key={c.value}
+              onClick={() => navigate(`/products?category=${encodeURIComponent(c.value)}`)}
+              className="min-w-[180px] md:min-w-0 rounded-2xl overflow-hidden bg-white shadow-sm border group text-left"
+            >
+              <div className="aspect-[4/3] overflow-hidden">
+                <img src={c.img} alt={c.label} className="w-full h-full object-cover group-hover:scale-105 transition" />
+              </div>
+              <div className="p-3 font-semibold">{c.label}</div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* FEATURED PRODUCTS */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold">ตัวอย่างสินค้า</h2>
+          <Link to="/products" className="text-amber-600 hover:underline text-sm">ดูสินค้าเพิ่มเติม</Link>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">กำลังโหลด...</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {rand.map((p) => (
+              <ProductCard key={p._id} product={p} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
-};
-
-export default Home;
+}
