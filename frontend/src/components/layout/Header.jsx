@@ -14,6 +14,7 @@ import {
   FaPlusCircle,
   FaCrown,
 } from "react-icons/fa";
+import NotificationBell from "../common/NotificationBell";
 
 function NavItem({ to, icon: Icon, children, onClick }) {
   return (
@@ -123,6 +124,7 @@ export default function Header() {
                 </button>
 
                 <div className="ml-2">{Avatar}</div>
+                <NotificationBell />
               </>
             ) : (
               <NavItem to="/login" icon={FaSignInAlt}>
@@ -169,7 +171,6 @@ export default function Header() {
               >
                 <FaComments /> Chat
               </Link>
-
               <Link
                 to={`/profile/${user?.username}`}
                 onClick={() => setOpen(false)}

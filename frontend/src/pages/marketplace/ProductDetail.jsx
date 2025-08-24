@@ -140,7 +140,9 @@ const ProductDetail = () => {
     }));
 
     try {
-      const response = await api.post(`/api/products/${slug}/like`);
+      const url = `/api/products/${slug}/like`;
+      const response = wasLiked ? await api.delete(url) : await api.put(url);
+      // const { isLiked, likesCount } = response.data || {};
       // Update with server response
       setProduct(prev => ({
         ...prev,
