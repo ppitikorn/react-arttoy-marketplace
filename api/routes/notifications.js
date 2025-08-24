@@ -10,7 +10,7 @@ router.get('/', authenticateJWT, async (req, res) => {
   if (unread === 'true') q.isRead = false;
 
   const items = await Notification.find(q)
-    .sort({ createdAt: -1 })
+    .sort({ updatedAt: -1 })
     .skip((+page - 1) * +limit)
     .limit(+limit)
     .populate('actor', 'username avatar')
@@ -24,6 +24,14 @@ router.get('/count', authenticateJWT, async (req, res) => {
   res.json({ count });
 });
 
+router.patch('/mark-all/read', authenticateJWT, async (req, res) => {
+  await Notification.updateMany(
+    { recipient: req.user._id, isRead: false },
+    { $set: { isRead: true, readAt: new Date() } }
+  );
+  res.json({ ok: true });
+});
+
 router.patch('/:id/read', authenticateJWT, async (req, res) => {
   const doc = await Notification.findOneAndUpdate(
     { _id: req.params.id, recipient: req.user._id },
@@ -31,14 +39,6 @@ router.patch('/:id/read', authenticateJWT, async (req, res) => {
     { new: true }
   );
   res.json(doc);
-});
-
-router.patch('/mark-all/read', authenticateJWT, async (req, res) => {
-  await Notification.updateMany(
-    { recipient: req.user._id, isRead: false },
-    { $set: { isRead: true, readAt: new Date() } }
-  );
-  res.json({ ok: true });
 });
 
 module.exports = router;

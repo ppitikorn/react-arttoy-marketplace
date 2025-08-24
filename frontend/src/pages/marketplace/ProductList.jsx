@@ -154,7 +154,7 @@ export default function ProductList() {
         const list = Array.isArray(res.data?.items || res.data) ? (res.data.items || res.data) : [];
         setProducts(list);
         setCurrentPage(1);
-        console.log('Loaded products:', list);
+        // console.log('Loaded products:', list);
       } catch (err) {
         if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
           console.error('Error fetching products:', err);

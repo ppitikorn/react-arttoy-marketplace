@@ -681,6 +681,7 @@ router.put('/:slug/like', authenticateJWT, async (req, res) => {
         body: product.title ? `มีคนถูกใจ: ${product.title}` : '',
         refModel: 'Product',
         refId: product._id,
+        refSlug: product.slug || slug,
         collapseKey: `like:${product._id}:${userId}`, // กันสแปมต่อคน-ต่อสินค้า
       });
 

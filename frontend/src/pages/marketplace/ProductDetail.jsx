@@ -129,7 +129,7 @@ const ProductDetail = () => {
     setLikeLoading(true);
     
     // Optimistic update
-    const wasLiked = product.likes.includes(user._id);
+    const wasLiked = isLiked
     const newLikes = wasLiked 
       ? product.likes.filter(id => id !== user._id)
       : [...product.likes, user._id];

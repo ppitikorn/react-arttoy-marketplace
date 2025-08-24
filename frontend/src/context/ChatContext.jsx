@@ -51,13 +51,13 @@ export function ChatProvider({ children }) {
 
     // logs / debug
     s.on("connect", () => {
-      console.log("[socket] connected:", s.id);
+      //console.log("[socket] connected:", s.id);
       // re-join ห้องเดิมอัตโนมัติถ้ามี
       const cid = currentCidRef.current;
       if (cid) s.emit("conversation:join", cid, () => {});
     });
     s.on("reconnect", (n) => {
-      console.log("[socket] reconnect", n);
+      //console.log("[socket] reconnect", n);
       const cid = currentCidRef.current;
       if (cid) s.emit("conversation:join", cid, () => {});
     });
@@ -99,7 +99,7 @@ export function ChatProvider({ children }) {
     onceConnected((s) => {
       const t = setTimeout(() => {
         if (joinSeqRef.current !== mySeq) return; // คำสั่งนี้ถูกแทนที่แล้ว
-        console.warn("[socket] join timeout -> retry", cid);
+        //console.warn("[socket] join timeout -> retry", cid);
         joinConversation(cid, cb);
       }, ACK_TIMEOUT_MS);
 
@@ -110,7 +110,7 @@ export function ChatProvider({ children }) {
           console.error("[socket] join failed", cid, ack);
           return cb?.(ack);
         }
-        console.log("[socket] joined", cid);
+        //console.log("[socket] joined", cid);
         cb?.(ack);
       });
     });

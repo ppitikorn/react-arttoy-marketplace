@@ -28,7 +28,7 @@ const Notification = require('../models/Notification');
 
 async function createNotification({
   recipient, actor, type, title, body,
-  refModel = 'None', refId = null, collapseKey = null,
+  refModel = 'None', refId = null, refSlug = null, collapseKey = null,
 }) {
   if (!recipient || !type) return null;
 
@@ -42,7 +42,7 @@ async function createNotification({
           createdAt: new Date(), // กันบางเคสไม่มี timestamps จาก upsert
         },
         $set: {
-          actor, type, title, body, refModel, refId,
+          actor, type, title, body, refModel, refId, refSlug,
           isRead: false,        // ทำให้ไม่อ่านทุกครั้งที่มีอีเวนต์ใหม่มา
           readAt: null,
         },
@@ -54,7 +54,7 @@ async function createNotification({
   }
 
   const created = await Notification.create({
-    recipient, actor, type, title, body, refModel, refId,
+    recipient, actor, type, title, body, refModel, refId, refSlug
   });
   return created.toObject();
 }

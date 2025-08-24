@@ -41,10 +41,10 @@ function initializeSocket(server) {
 
   io.on('connection', (socket) => {
     const userId = socket.user.id;
-    console.log('[socket] connected', socket.id, 'userId=', userId);
+    //console.log('[socket] connected', socket.id, 'userId=', userId);
 
     socket.join(`user:${userId}`);
-    console.log(`[Socket Private] auto-join user:${userId}`);
+    //console.log(`[Socket Private] auto-join user:${userId}`);
 
     const ackWrap = (ack, data) => {
       if (typeof ack === 'function') ack(data);
@@ -65,7 +65,7 @@ function initializeSocket(server) {
     socket.on('conversation:join', (conversationId, ack) => {
       if (!isValidObjectId(conversationId)) return ackWrap(ack, { ok: false, error: 'Invalid conversationId' });
       socket.join(`conv:${conversationId}`);
-      console.log(`[socket] join conv:${conversationId} by ${userId}`);
+      //console.log(`[socket] join conv:${conversationId} by ${userId}`);
       ackWrap(ack, { ok: true });
     });
 
@@ -149,7 +149,7 @@ function initializeSocket(server) {
             lastMessageText: text || (images.length ? '[image]' : ''),
             senderId: userId,
           });
-          console.log(`[Socket Private] conversation:update ${pid}`);
+          //console.log(`[Socket Private] conversation:update ${pid}`);
         }
         for (const p of convo.participants) {
             const pid = p.toString();
@@ -168,7 +168,7 @@ function initializeSocket(server) {
 
             if (notif) {
               io.to(`user:${pid}`).emit('notify', notif); // ยิงเข้า private room
-              console.log(`[Socket Private] notify ${pid} title=${notif.title}`);
+              //console.log(`[Socket Private] notify ${pid} title=${notif.title}`);
             }
           }
 
@@ -222,7 +222,7 @@ function initializeSocket(server) {
 
     // ---- disconnect ----
     socket.on('disconnect', (reason) => {
-      console.log('[socket] disconnected', socket.id, 'reason=', reason);
+      //console.log('[socket] disconnected', socket.id, 'reason=', reason);
     });
   });
   ioRef = io;
