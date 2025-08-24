@@ -1,6 +1,8 @@
 // src/pages/products/ProductList.jsx
 import { useState, useEffect, useMemo } from 'react';
 import { message, Form, Input, Select, Space, InputNumber, Pagination, Button } from 'antd';
+
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { FiFilter, FiX } from 'react-icons/fi';
 import api from '../../utils/api';
 import BrandSelect from '../../components/form/BrandSelect';
@@ -25,11 +27,30 @@ function pickTruthy(obj) {
   );
 }
 
+// 🔹 helper: แปลง search params เป็น filters
+const parseFiltersFromSearch = (searchParams) => ({
+  category: searchParams.get('category') || '',
+  brand: searchParams.get('brand') || '',
+  rarity: searchParams.get('rarity') || '',
+  condition: searchParams.get('condition') || '',
+  // tags รับได้ทั้ง "a,b,c" หรือซ้ำๆหลายพารามิเตอร์ ?tags=a&tags=b
+  tags: (() => {
+    const multi = searchParams.getAll('tags');
+    if (multi && multi.length > 1) return multi;
+    const single = searchParams.get('tags');
+    return single ? single.split(',').filter(Boolean) : [];
+  })(),
+  minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : null,
+  maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : null,
+  q: searchParams.get('q') || '',
+});
+
 export default function ProductList() {
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [availableTags, setAvailableTags] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // ค้นหา + ฟิลเตอร์
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,7 +116,15 @@ export default function ProductList() {
       }
     })();
   }, []);
-
+  // Sync filters <-> URL search params
+   useEffect(() => {
+    const next = parseFiltersFromSearch(searchParams);
+    // อัปเดตทั้ง filters และ searchQuery ถ้ามี q
+    setFilters(prev => ({ ...prev, ...next, q: undefined }));
+    if (next.q !== undefined) setSearchQuery(next.q);
+    // รีเซ็ตหน้าให้เริ่มที่หน้า 1
+    setCurrentPage(1);
+  }, [searchParams]);
   // ✅ ยิงค้นหา “เมื่อค่าที่ debounce แล้วเปลี่ยน” + ยกเลิกคำขอเก่า
   useEffect(() => {
     const controller = new AbortController();

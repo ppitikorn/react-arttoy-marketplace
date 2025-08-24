@@ -21,7 +21,7 @@ function ProductCard({ product , isSold = false}) {
             </div>
           </div>
           {/* Image container with fixed height */}
-          {hasImages ? (<div className="aspect-w-1 aspect-h-1">
+          {hasImages ? (<div className="relative w-full aspect-[4/5] overflow-hidden rounded-t-2xl bg-gray-100">
                   <img
                         src={product.images[0]}
                         alt={product.title}

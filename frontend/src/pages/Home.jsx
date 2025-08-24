@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
+import axios from 'axios';
 import ProductCard from '../components/common/ProductCard';
 
 const categories = [
@@ -81,18 +82,34 @@ export default function Home() {
           <h2 className="text-xl sm:text-2xl font-bold ">สำรวจตามหมวดหมู่</h2>
           <Link to="/products" className="text-amber-600 hover:underline text-sm">ดูทั้งหมด</Link>
         </div>
-        <div className="flex md:grid md:grid-cols-5 gap-4 overflow-x-auto no-scrollbar pb-2">
-          {categories.map((c) => (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+          {/* {categories.map((c) => (
             <button
               key={c.value}
               onClick={() => navigate(`/products?category=${encodeURIComponent(c.value)}`)}
-              className="min-w-[180px] md:min-w-0 rounded-2xl overflow-hidden bg-white shadow-sm border group text-left"
+          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:scale-105 transition-transform duration-200 ease-in-out"
             >
               <div className="aspect-[1/1] overflow-hidden ">
                 <img src={c.img} alt={c.label} className="w-full h-full object-cover group-hover:scale-100 transition " />
               </div>
               <div className="p-3 font-semibold">{c.label}</div>
             </button>
+          ))} */}
+          {categories.map((c) => (
+            <Link
+              key={c.value}
+              to={`/products?category=${encodeURIComponent(c.value)}`}
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:scale-105 transition-transform duration-200 ease-in-out"
+            >
+              <div className="aspect-[1/1] overflow-hidden">
+                <img
+                  src={c.img}
+                  alt={c.label}
+                  className="w-full h-full object-cover group-hover:scale-100 transition"
+                />
+              </div>
+              <div className="p-3 font-semibold">{c.label}</div>
+            </Link>
           ))}
         </div>
       </section>
