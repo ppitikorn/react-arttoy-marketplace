@@ -34,6 +34,7 @@ const brandRoutes = require('./routes/brand');
 const productRoutes = require('./routes/product');
 const reportRoutes = require('./routes/report');
 const chatRoutes = require('./routes/chat');
+const uploadRoutes = require('./routes/uploads');
 const { authenticateJWT, isAdmin } = require('./middleware/auth');
 
 
@@ -45,6 +46,7 @@ app.use('/api/brand', brandRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Connect to MongoDB
 const PORT = process.env.PORT || 5000;
