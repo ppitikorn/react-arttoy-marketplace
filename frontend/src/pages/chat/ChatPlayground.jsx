@@ -5,7 +5,7 @@ import api from "../../utils/api";
 import { FaRegImage } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
-import { uploadChatImage } from "../../utils/uploadChatImage"; // <- ชื่อไฟล์/ฟังก์ชันตามนี้
+import { uploadChatImage } from "../../utils/uploadChatimage"; // <- ชื่อไฟล์/ฟังก์ชันตามนี้
 
 export default function ChatPlayground() {
   const [users, setUsers] = useState([]);
