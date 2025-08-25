@@ -11,9 +11,10 @@ const { uploadProduct } = require('../middleware/uploadMiddleware'); // Import t
 const slugify = require('slugify');
 const { v4: uuidv4 } = require('uuid');
 const { cloudinary } = require('../config/cloudinaryConfig'); // Import Cloudinary config
-const { detectLabels } = require('../config/google-vision'); // Import Google Vision label detection function
+const { moderatePost,moderateImage } = require('../config/google-vision'); // Import Google Vision label detection function
 const { createNotification } = require('../services/notifyService');
 const { getIO } = require('../socketServer');
+
 
 
 const extractPublicId = (cloudinaryUrl) => {
@@ -70,85 +71,65 @@ function slugifyThai(str) {
     .replace(/[^\u0E00-\u0E7Fa-zA-Z0-9\-]/g, '') // ลบสัญลักษณ์ที่ไม่ใช่ไทย อังกฤษ หรือเลข
     .toLowerCase();
 }
+
 router.post('/', authenticateJWT, uploadProduct.array('images', 5), async (req, res) => {
   try {
     const { title, price, category, brand, details, condition, rarity, tags } = req.body;
     const userId = req.user._id;
-    const baseSlug = slugifyThai(title); // Use slugifyThai for Thai titles
-    const slug = `${baseSlug}-${uuidv4()}`; // Append a random string to ensure uniqueness
 
+    const baseSlug = slugifyThai(title);
+    const slug = `${baseSlug}-${uuidv4()}`;
 
-    // Validate required fields
+    // Validate
     if (!title || !price || !category || !brand || !details || !condition || !rarity || !tags) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const imageUrls = req.files.map(file => file.path); // หรือ file.url ขึ้นกับว่าคุณใช้ field ไหนจาก multer-cloudinary
-    if (imageUrls.length === 0) {
+    const imageUrls = (req.files || []).map(file => file.path);
+    if (!imageUrls.length) {
       return res.status(400).json({ message: 'At least one image is required' });
     }
-    console.log('Uploaded image URLs:', imageUrls);
-      if (imageUrls) {
-      for (const imageUrl of imageUrls) {
-        const isFriendly = await detectLabels(imageUrl);
-        if (!isFriendly) {
-          console.log(`Image ${imageUrl} is not friendly or colorful, rejecting product creation.`);
-          // Delete all product images from Cloudinary
-          try {
-            const deletionResults = await deleteCloudinaryImages(imageUrls);
-            console.log('Cloudinary deletion results:', deletionResults);
-          } catch (error) {
-            console.error('Error deleting product images from Cloudinary:', error);
-            // Continue with product deletion even if image deletion fails
-          }
 
-          return res.status(400).json({
-            message: 'Image does not meet friendly and colorful criteria',
-          });
-        }
+    // ✅ ตรวจรูปทั้งโพสต์ทีเดียว
+    const { final, results } = await moderatePost(imageUrls);
 
-        console.log(`Image ${imageUrl} is friendly and colorful.`);
-      }
+    if (final === 'rejected') {
+      // ลบรูปทั้งหมดที่อัปโหลด (rollback media)
+      try { await deleteCloudinaryImages(imageUrls); } catch (e) { console.warn('Cloudinary cleanup error:', e); }
+      return res.status(400).json({
+        message: 'รูปภาพไม่ผ่านเกณฑ์การตรวจสอบ',
+        moderation: { final, results },
+      });
     }
 
-    const newProduct = new Product({
-            title,
-            slug,
-            price,
-            category,
-            brand,
-            images: imageUrls,
-            details,
-            condition,
-            rarity,
-            tags,
-            seller: userId,
-          });
+    const status = final === 'approved' ? 'Published' : 'Pending';
 
-          await newProduct.save();
-          res.status(201).json({ message: 'Product created successfully', product: newProduct });
-    // // Create a new product
-    // const newProduct = new Product({
-    //   title,
-    //   slug,
-    //   price,
-    //   category,
-    //   brand,
-    //   images: imageUrls,
-    //   details,
-    //   condition,
-    //   rarity,
-    //   tags,
-    //   seller: userId,
-    // });
+    const newProduct = await Product.create({
+      title,
+      slug,
+      price,
+      category,
+      brand,
+      images: imageUrls,
+      details,
+      condition,
+      rarity,
+      tags: Array.isArray(tags) ? tags : [tags],
+      seller: userId,
+      status,
+    });
 
-    // await newProduct.save();
-    // res.status(201).json({ message: 'Product created successfully', product: newProduct });
+    return res.status(201).json({
+      message: 'Product created successfully',
+      product: newProduct,
+      moderation: { final, results }, // ส่งผลตรวจกลับให้ UI ถ้าจะโชว์
+    });
   } catch (error) {
     console.error('Error creating product:', error);
-    res.status(500).json({ message: 'Failed to create product' });
+    return res.status(500).json({ message: 'Failed to create product' });
   }
 });
+
 
 // Get all products with optional filters
 router.get('/', async (req, res) => {
@@ -395,36 +376,67 @@ router.get('/:slug', async (req, res) => {
   }
 });
 // Update a product by slug
-router.put('/:slug', authenticateJWT, uploadProduct.array('newImages', 5), async (req, res) => {
+router.put('/:slug', authenticateJWT, uploadProduct.array('newImages', 5), async (req, res) => { 
   try {
     const { slug } = req.params;
     const { 
-      title, 
-      price, 
-      category, 
-      brand, 
-      details, 
-      condition, 
-      rarity, 
-      tags, 
-      existingImages, 
-      imagesToDelete 
+      title, price, category, brand, details, condition, rarity, tags, 
+      existingImages, imagesToDelete 
     } = req.body;
     const userId = req.user._id;
-    
-    const product = await Product.findOne({ slug });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
 
-    // Check if user is the seller
+    const product = await Product.findOne({ slug });
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
     if (!product.seller.equals(userId)) {
-      console.log('Unauthorized access attempt by user:', userId);
-      console.log('Product seller ID:', product.seller);
       return res.status(403).json({ message: 'Unauthorized access' });
     }
 
-    // Update product fields
+    // เตรียมรายการรูปที่จะเหลืออยู่หลังอัปเดต
+    const imagesToDeleteArr = imagesToDelete
+      ? (Array.isArray(imagesToDelete) ? imagesToDelete : [imagesToDelete])
+      : [];
+
+    if (imagesToDeleteArr.length > 0) {
+      try { await deleteCloudinaryImages(imagesToDeleteArr); } 
+      catch (e) { console.warn('Cloudinary deletion error:', e); }
+    }
+
+    let updatedImages = [];
+    if (existingImages) {
+      const existing = Array.isArray(existingImages) ? existingImages : [existingImages];
+      updatedImages = existing.filter(img => !imagesToDeleteArr.includes(img));
+    }
+
+    let newImageUrls = [];
+    if (req.files && req.files.length > 0) {
+      newImageUrls = req.files.map(f => f.path);
+      updatedImages = [...updatedImages, ...newImageUrls];
+    }
+
+    if (updatedImages.length === 0) {
+      return res.status(400).json({ message: 'At least one image is required' });
+    }
+    if (updatedImages.length > 4) {
+      return res.status(400).json({ message: 'Maximum 4 images allowed' });
+    }
+
+    // ✅ ตรวจ “รูปชุดที่จะบันทึกจริง” ทั้งหมดอีกครั้ง
+    const { final, results } = await moderatePost(updatedImages);
+
+    if (final === 'rejected') {
+      // rollback: ลบเฉพาะ "รูปใหม่" ที่เพิ่งอัปโหลดในรอบนี้
+      if (newImageUrls.length) {
+        try { await deleteCloudinaryImages(newImageUrls); } 
+        catch (e) { console.warn('cleanup new images error:', e); }
+      }
+      return res.status(400).json({
+        message: 'รูปภาพหลังแก้ไขไม่ผ่านเกณฑ์การตรวจสอบ',
+        moderation: { final, results },
+      });
+    }
+
+    // อัปเดตฟิลด์
     product.title = title;
     product.price = price;
     product.category = category;
@@ -432,70 +444,34 @@ router.put('/:slug', authenticateJWT, uploadProduct.array('newImages', 5), async
     product.details = details;
     product.condition = condition;
     product.rarity = rarity;
-    
-    // Handle tags (ensure it's an array)
-    if (tags) {
-      product.tags = Array.isArray(tags) ? tags : [tags];
-    }    // Handle image updates
-    let updatedImages = [];
-    const imagesToDeleteArray = imagesToDelete ? (Array.isArray(imagesToDelete) ? imagesToDelete : [imagesToDelete]) : [];
-    
-    // Delete images from Cloudinary if there are any marked for deletion
-    if (imagesToDeleteArray.length > 0) {
-      console.log('Deleting images from Cloudinary:', imagesToDeleteArray);
-      try {
-        const deletionResults = await deleteCloudinaryImages(imagesToDeleteArray);
-        console.log('Cloudinary deletion results:', deletionResults);
-      } catch (error) {
-        console.error('Error deleting images from Cloudinary:', error);
-        // Continue with the update even if image deletion fails
-      }
-    }
-    
-    // Add existing images that are not marked for deletion
-    if (existingImages) {
-      const existingImagesArray = Array.isArray(existingImages) ? existingImages : [existingImages];
-      updatedImages = existingImagesArray.filter(img => !imagesToDeleteArray.includes(img));
-    }
-    
-    // Add new uploaded images
-    if (req.files && req.files.length > 0) {
-      const newImageUrls = req.files.map(file => file.path);
-      updatedImages = [...updatedImages, ...newImageUrls];
-    }
-    
-    // Ensure at least one image exists
-    if (updatedImages.length === 0) {
-      return res.status(400).json({ message: 'At least one image is required' });
-    }
-    
-    // Limit to maximum 4 images
-    if (updatedImages.length > 4) {
-      return res.status(400).json({ message: 'Maximum 4 images allowed' });
-    }
-    
+    if (tags) product.tags = Array.isArray(tags) ? tags : [tags];
+
     product.images = updatedImages;
 
+    // อัปเดตสถานะตามผลตรวจ
+    product.status = (final === 'approved') ? 'Published' : 'Pending';
+
     await product.save();
-    
-    // Populate the response with complete data
+
     const updatedProduct = await Product.findOne({ slug })
       .populate('seller', 'avatar username name emailVerified')
       .populate('tags', 'name')
       .populate('brand', 'name');
-    
-    res.status(200).json({ 
+
+    return res.status(200).json({ 
       message: 'Product updated successfully', 
-      product: updatedProduct 
+      product: updatedProduct,
+      moderation: { final, results },
     });
   } catch (error) {
     console.error('Error updating product:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       message: 'Failed to update product',
       error: error.message 
     });
   }
 });
+
 
 // Patch product mark as sold
 router.patch('/:slug/sold', authenticateJWT, async (req, res) => {

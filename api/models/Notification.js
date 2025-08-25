@@ -13,7 +13,7 @@ const notificationSchema = new Schema(
     // อ้างอิงสิ่งที่เกิดเหตุ เช่น product, conversation, message
     refModel: { type: String, enum: ['Product', 'Conversation', 'Message', 'None'], default: 'None' },
     refId: { type: Schema.Types.ObjectId },
-    refSlug: { type: String },
+    refSlug: { type: String , trim: true},
     // ใช้รวม/กันสแปม (เช่น ไลค์ซ้ำๆ บนโพสต์เดียวกัน)
     collapseKey: { type: String, index: true }, // ex: `like:${productId}`
 
