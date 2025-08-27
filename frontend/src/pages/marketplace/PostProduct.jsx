@@ -128,7 +128,7 @@ export default function PostProduct() {
         });
       }
       // Log the formDataToSend for debugging
-      console.log('FormData to send:', formDataToSend);
+      //console.log('FormData to send:', formDataToSend);
       const response = await api.post('/api/products', formDataToSend, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -136,7 +136,7 @@ export default function PostProduct() {
         }
       });
       
-      console.log('Product created:', response.data);
+      //console.log('Product created:', response.data);
       message.success('Product created successfully');
       navigate('/products'); // Redirect to product list or detail page
       form.resetFields();

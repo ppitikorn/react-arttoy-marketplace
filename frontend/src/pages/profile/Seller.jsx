@@ -48,7 +48,7 @@ const Seller = () => {
     try {
       setLoading(true);
       const response = await api.get(`/api/profile/user/${username}`);
-      console.log('Seller profile response:', response.data);
+      //console.log('Seller profile response:', response.data);
       setSeller(response.data);
     } catch (error) {
       console.error('Error fetching seller profile:', error);

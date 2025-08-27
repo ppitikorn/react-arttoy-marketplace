@@ -86,7 +86,7 @@ const onPastePlain = (e) => {
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
-          console.log("👀 Seen last message → mark as read");
+          //console.log("👀 Seen last message → mark as read");
           markRead({ conversationId, until: new Date() });
         }
       },
@@ -158,13 +158,13 @@ const onPastePlain = (e) => {
   // ------------------------ Join / Leave room ------------------------
   useEffect(() => {
     if (!conversationId) return;
-    console.log("[join] try", conversationId);
+    //console.log("[join] try", conversationId);
     joinConversation(conversationId, (ack) => {
-      console.log("[join ack]", ack);
+      //console.log("[join ack]", ack);
     });
     return () =>
       leaveConversation(conversationId, (ack) => {
-        console.log("[leave ack]", ack);
+        //console.log("[leave ack]", ack);
       });
   }, [joinConversation, leaveConversation, conversationId]);
 
@@ -259,7 +259,7 @@ const onPastePlain = (e) => {
     if (!conversationId || (!hasText && !hasImages)) return;
 
     sendMessage({ conversationId, text, images: pendingImages }, (ack) => {
-      console.log("[send ack]", ack);
+      //console.log("[send ack]", ack);
       if (!ack?.ok) return alert(ack?.error || "Send failed");
       setMessage("");
       setPendingImages([]); // เคลียร์พรีวิวหลังส่งสำเร็จ
@@ -276,7 +276,7 @@ const onPastePlain = (e) => {
       const metas = [];
       for (const f of toUpload) {
         const meta = await uploadChatImage(f);
-        console.log("[uploadChatImage]", meta);
+        //console.log("[uploadChatImage]", meta);
         metas.push(meta);
       }
       setPendingImages((prev) => [...prev, ...metas]);
