@@ -36,9 +36,10 @@ const ProductDetail = () => {
   const trackView = async () => {
     try {
       const response = await api.post(`/api/products/${slug}/view`, {
-        userId: user?._id || null,
+        userId: user?.id || user?._id || null,
         sessionId: getSessionId(),
       });
+      //console.log(user?.id)
 
       if (response.data.success) {
         setViewsCount(response.data.viewsCount);
@@ -125,64 +126,6 @@ const ProductDetail = () => {
   }
 }, [product, user]);
 
-  // const handleLikeToggle = async () => {
-  //   // Check if user is logged in
-  //   if (!user) {
-  //     alert('Please login to like products');
-  //     navigate('/login');
-  //     return;
-  //   }
-
-  //   // Prevent sellers from liking their own products
-  //   if (isSeller) {
-  //     alert('You cannot like your own product');
-  //     return;
-  //   }
-
-  //   setLikeLoading(true);
-    
-  //   // Optimistic update
-  //   const wasLiked = isLiked
-  //   const newLikes = wasLiked 
-  //     ? product.likes.filter(id => id !== user._id)
-  //     : [...product.likes, user._id];
-    
-  //   setProduct(prev => ({
-  //     ...prev,
-  //     likes: newLikes
-  //   }));
-
-  //   try {
-  //     const url = `/api/products/${slug}/like`;
-  //     const response = wasLiked ? await api.delete(url) : await api.put(url);
-  //     // const { isLiked, likesCount } = response.data || {};
-  //     // Update with server response
-  //     setProduct(prev => ({
-  //       ...prev,
-  //       likes: response.data.isLiked 
-  //         ? [...prev.likes.filter(id => id !== user._id), user._id]
-  //         : prev.likes.filter(id => id !== user._id)
-  //     }));
-  //     fetchLikeStatus(); // Refresh like status
-  //   } catch (error) {
-  //     // Revert optimistic update on error
-  //     setProduct(prev => ({
-  //       ...prev,
-  //       likes: product.likes
-  //     }));
-      
-  //     console.error('Error toggling like:', error);
-  //     alert('Failed to update like status');
-  //   } finally {
-  //     setLikeLoading(false);
-  //   }
-  // };
-  // สมมติว่าตอน mount ดึงค่าเริ่มต้นมาก่อน
-
-
-// ใช้ตอนโหลดรายละเอียดสินค้า/like-status
-// setIsLiked(resIsLiked); setLikesCount(resLikesCount);
-
 const handleLikeToggle = async () => {
   if (!user) {
     alert('Please login to like products');
@@ -224,7 +167,7 @@ const handleLikeToggle = async () => {
   }
 };
 
-  const handleMarkAsSold = async (e) => {
+const handleMarkAsSold = async (e) => {
     e.preventDefault();
     if (loading) return;
 
@@ -334,25 +277,66 @@ const handleLikeToggle = async () => {
 
             {/* Product Details */}
             <div className="space-y-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex">{product.title}</h1>
-                <div className="flex items-center mt-2 flex-wrap gap-2">
-                  <span className={`px-3 py-1 text-sm rounded-full ${
-                    product.rarity === 'Limited' ? 'bg-red-100 text-red-600' :
-                    product.rarity === 'Secret' ? 'bg-purple-100 text-purple-600' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
-                    {product.rarity}
-                  </span>
-                  <span className="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-full">
-                    {product.condition}
-                  </span>
-                  <span className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-full">
-                    {product.category}
-                  </span>
-                </div>
-                <p className="mt-2 text-gray-700">{product.details}</p>
+            <div className="relative flex items-start justify-between gap-3">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-snug">
+                  {product.title}
+                </h1>
+
+                {/* Status badge (responsive) */}
+                {isSeller && (<span
+                    className={[
+                      "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm shrink-0",
+                      product.status === "Published" ? "bg-green-100 text-green-800 ring-1 ring-green-200" :
+                      product.status === "Pending"   ? "bg-amber-100 text-amber-800 ring-1 ring-amber-200" :
+                      product.status === "Rejected"  ? "bg-red-100 text-red-700 ring-1 ring-red-200" :
+                                                      "bg-gray-100 text-gray-800 ring-1 ring-gray-200"
+                    ].join(" ")}
+                    title={product.status}
+                    aria-label={`status: ${product.status}`}
+                  >
+                    <span
+                      className={[
+                        "h-2 w-2 rounded-full",
+                        product.status === "Published" ? "bg-green-500" :
+                        product.status === "Pending"   ? "bg-amber-500" :
+                        product.status === "Rejected"  ? "bg-red-500" :
+                                                        "bg-gray-400"
+                      ].join(" ")}
+                    />
+                    <span className="font-medium">
+                      {product.status}
+                    </span>
+                  </span>)}
               </div>
+
+              {/* Chips: rarity / condition / category */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={[
+                  "px-3 py-1 text-sm rounded-full",
+                  product.rarity === "Limited" ? "bg-rose-100 text-rose-600" :
+                  product.rarity === "Secret"  ? "bg-purple-100 text-purple-600" :
+                                                "bg-gray-100 text-gray-600"
+                ].join(" ")}>
+                  {product.rarity}
+                </span>
+
+                <span className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full">
+                  {product.condition}
+                </span>
+
+                <span className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full">
+                  {product.category}
+                </span>
+              </div>
+
+              {/* Details */}
+              {product.details && (
+                <p className="text-gray-700 leading-relaxed">
+                  {product.details}
+                </p>
+              )}
+
+
 
               <div className="text-4xl font-bold text-[#FF4C4C]">
                 ฿{product.price.toLocaleString()}
@@ -432,7 +416,7 @@ const handleLikeToggle = async () => {
                       )}
                     </button>
                     {/* Contact Button - Temporarily disabled */}
-                    <ChatButton userId={product?.seller?._id} />
+                    <ChatButton userId={product?.seller?._id} product={product} />
                   </>
                 )}
                 {isSeller && (

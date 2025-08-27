@@ -1,34 +1,16 @@
-// const Notification = require('../models/Notification');
-
-// async function createNotification({
-//   recipient, actor, type, title, body,
-//   refModel = 'None', refId = null, collapseKey = null,
-// }) {
-//   if (!recipient || !type) return null;
-
-//   if (collapseKey) {
-//     return await Notification.findOneAndUpdate(
-//       { recipient, collapseKey },
-//       {
-//         $setOnInsert: { recipient, actor, type, title, body, refModel, refId },
-//         $set: { isRead: false, readAt: null },
-//         $currentDate: { updatedAt: true }
-//       },
-//       { new: true, upsert: true }
-//     ).lean();
-//   }
-
-//   const doc = await Notification.create({ recipient, actor, type, title, body, refModel, refId });
-//   return doc.toObject();
-// }
-
-// module.exports = { createNotification };
 // services/notifyService.js
 const Notification = require('../models/Notification');
 
 async function createNotification({
-  recipient, actor, type, title, body,
-  refModel = 'None', refId = null, refSlug = null, collapseKey = null,
+  recipient,        // userId (string/ObjectId)
+  actor,            // admin userId (string/ObjectId) หรือ null
+  type,             // 'product_status'
+  title,            // 'สินค้าได้รับการเผยแพร่แล้ว', ...
+  body,             // เนื้อหาแจ้งเตือน
+  refModel,         // 'Product'
+  refId,            // productId
+  refSlug,          // product slug
+  collapseKey,      // ใช้ dedupe ได้
 }) {
   if (!recipient || !type) return null;
 

@@ -77,7 +77,7 @@ router.put('/', authenticateJWT, uploadProfile.single('avatarFile'), async (req,
         new: true,
         runValidators: true // Ensure updates meet schema validation
       }
-    ).select('-password');
+    ).select('-password').lean();
 
     res.json(updatedUser);
   } catch (error) {
@@ -307,7 +307,18 @@ router.get('/user/:username', async (req, res) => {
     res.status(500).json({ message: 'Error fetching user profile', error: error.message });
   }
 });
-
+router.get('/userid/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).select('-password -email -createdAt -updatedAt -oauthProviders -lastActive -likedProducts -interests -status -phoneNumber -__v');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user profile', error: error.message });
+  }
+});
 
 router.put('/preferences', authenticateJWT, async (req, res) => {
   try {

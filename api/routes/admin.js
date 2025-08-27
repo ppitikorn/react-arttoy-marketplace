@@ -10,6 +10,8 @@ const Brand = require('../models/Brand');
 const Product = require('../models/Product');
 const Report = require('../models/Report');
 const cloudinary = require('cloudinary').v2;
+const { getIO } = require('../socketServer');
+const { createNotification } = require('../services/notifyService');
 
 // Get all users (Admin only)
 router.get('/users', authenticateJWT, isAdmin, async (req, res) => {
@@ -288,27 +290,65 @@ router.put('/products/:id', authenticateJWT, isAdmin, async (req, res) => {
 });
 
 // Update product status (Admin Only)
+const ALLOWED = ['Published', 'Pending', 'Rejected', 'Hidden'];
+
 router.patch('/products/:id/status', authenticateJWT, isAdmin, async (req, res) => {
   try {
     const { status } = req.body;
-    
-    // Validate status
-    if (!['Published', 'Pending', 'Rejected', 'Hidden'].includes(status)) {
+    if (!ALLOWED.includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
+    // ดึงก่อนอัปเดตเพื่อรู้ owner/สถานะเดิม
+    const before = await Product.findById(req.params.id)
+      .select('_id seller title status slug')
+      .lean();
+    if (!before) return res.status(404).json({ message: 'Product not found' });
+
+    // อัปเดตสถานะ
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true, runValidators: true }
-    );
+    ).select('_id seller title status slug');
 
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+    // ไม่เปลี่ยนจริง ก็จบ
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (before.status === product.status) return res.json(product);
+
+    // แจ้งเฉพาะ Published / Rejected (ถ้าต้องการแจ้ง Pending/Hidden ด้วย ก็เพิ่มเข้า array)
+    if (['Published', 'Rejected'].includes(product.status)) {
+      const ownerId = product.seller?.toString?.() || String(product.seller);
+      const isPublished = product.status === 'Published';
+
+      const title = isPublished ? 'สินค้าเผยแพร่แล้ว' : 'สินค้าไม่ผ่านการตรวจ';
+      const body  = isPublished
+        ? `สินค้าของคุณ “${product.title}” ถูกเผยแพร่แล้ว`
+        : `สินค้าของคุณ “${product.title}” ถูกปฏิเสธการเผยแพร่`;
+
+      // ใช้ type: 'system' (ตาม enum ที่นายมี)
+      const notify = await createNotification({
+        recipient: ownerId,
+        actor: req.user._id,          // แอดมินที่กด
+        type: 'product',
+        title,
+        body,
+        refModel: 'Product',
+        refId: product._id,
+        refSlug: product.slug ?? null,
+        collapseKey: `product-status:${product._id}`, // รวมแจ้งเตือนซ้ำกรณีแก้ไปแก้มาบ่อย
+      });
+
+      // ยิง realtime ให้เจ้าของ
+      const io = getIO?.();
+      if (io && notify) {
+        io.to(`user:${ownerId}`).emit('notify', notify);
+      }
     }
 
-    res.json(product);
+    return res.json(product);
   } catch (error) {
+    console.error('Error updating product status', error);
     res.status(500).json({ message: 'Error updating product status', error: error.message });
   }
 });

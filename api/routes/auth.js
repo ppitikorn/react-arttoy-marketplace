@@ -110,7 +110,8 @@ router.post('/login', async (req, res) => {
         email: user.email,
         username: user.username,
         name: user.name,
-        role: user.role
+        role: user.role,
+        hasOnboarded: user.hasOnboarded
       }
     });
     console.log(`User "${user.username}" logged in successfully`);
@@ -143,7 +144,9 @@ router.get('/me', authenticateJWT, (req, res) => {
       username: req.user.username,
       role: req.user.role,
       likesProducts: req.user.likedProducts || [],
+      hasOnboarded: req.user.hasOnboarded,
       preferences: req.user.preferences || {},
+      status: req.user.status.state,
     }
   });
 });

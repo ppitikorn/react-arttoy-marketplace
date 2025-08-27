@@ -58,6 +58,10 @@ export const AuthProvider = ({ children }) => {
     return () => { alive = false; };
   }, [token]);
 
+  const isBanned = user?.status === 'banned';
+  const isSuspended = user?.status === 'suspended';
+
+
   const login = async (email, password) => {
     try {
       const res = await api.post('/api/auth/login', { email, password });
@@ -118,6 +122,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = { user, loading, login, register, logout, setUser, token ,setToken, refreshUser};
+  if (isBanned || isSuspended) {
+    // ถ้าโดนแบนหรือพักการใช้งาน ให้ logout ทันที
+    logout();
+  }
 
   return (
     <AuthContext.Provider value={value}>

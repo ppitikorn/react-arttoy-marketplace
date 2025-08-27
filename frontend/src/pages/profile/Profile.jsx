@@ -58,6 +58,7 @@ const Profile = () => {
     }),
   onSubmit: async (values) => {
       try {
+        setLoading(true);
         //console.log('Submitting form with values:', values);
         const token = localStorage.getItem('token');
         const formData = new FormData();
@@ -78,6 +79,7 @@ const Profile = () => {
             'Content-Type': 'multipart/form-data',
           },
         });
+        //console.log('Profile updated successfully:', response.data); 
         setUser(response.data);
         setIsEditing(false);
         setError('');
@@ -86,6 +88,8 @@ const Profile = () => {
       } catch (err) {
         console.error('Error updating profile:', err);
         setError(err.response?.data?.message || 'Failed to update profile');
+      } finally {
+        setLoading(false);
       }
     },
   });
@@ -219,7 +223,6 @@ const Profile = () => {
     }
     setIsEditing(false);
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">

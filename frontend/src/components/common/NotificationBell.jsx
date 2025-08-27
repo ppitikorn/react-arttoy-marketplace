@@ -212,6 +212,8 @@ export default function NotificationBell() {
                           ? "💬"
                           : n.type === "like"
                           ? "❤️"
+                          : n.type === "product"
+                          ? "📦"
                           : "🔔"}
                       </div>
                       <div className="min-w-0 flex-1">

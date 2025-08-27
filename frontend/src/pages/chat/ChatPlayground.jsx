@@ -99,48 +99,168 @@ const onPastePlain = (e) => {
   }, [conversationId, markRead]);
 
   // ------------------------ Sidebar: load conversations ------------------------
+
+  // useEffect(() => {
+  //   (async () => {
+  //     const res = await api.get("/api/chat/conversations");
+  //     const items = Array.isArray(res.data?.items) ? res.data.items : [];
+  //     setUsers(items);
+
+  //     if (peerFromQuery) {
+  //       const match = items.find((it) => it.peer?._id === peerFromQuery);
+  //       if (match) {
+  //         setSelectedUser(match);
+  //       } else {
+  //         const r = await api.post("/api/chat/conversations", { peerId: peerFromQuery });
+  //         const cid = r.data.conversationId || r.data._id;
+  //         const placeholder = {
+  //           conversationId: cid,
+  //           peer: { _id: peerFromQuery, name: "", email: "", avatar: null },
+  //           lastMessageText: "",
+  //           lastMessageAt: null,
+  //           unread: 0,
+  //         };
+  //         setUsers((prev) => [placeholder, ...prev]);
+  //         setSelectedUser(placeholder);
+  //       }
+  //       // ล้าง query ?peer=...
+  //       const url = new URL(window.location.href);
+  //       url.searchParams.delete("peer");
+  //       window.history.replaceState({}, "", url.toString());
+  //     } else {
+  //       if (items.length > 0) setSelectedUser(items[0]);
+  //     }
+  //   })();
+  // }, [peerFromQuery]);
   useEffect(() => {
-    (async () => {
+  let alive = true;
+
+  (async () => {
+    try {
+      // 1) โหลดห้องที่มีอยู่ก่อน
       const res = await api.get("/api/chat/conversations");
       const items = Array.isArray(res.data?.items) ? res.data.items : [];
+      if (!alive) return;
       setUsers(items);
 
       if (peerFromQuery) {
-        const match = items.find((it) => it.peer?._id === peerFromQuery);
-        if (match) {
-          setSelectedUser(match);
+        // 2) ถ้ามีในรายการอยู่แล้ว → เลือกเลย
+        const found = items.find(it => String(it.peer?._id) === String(peerFromQuery));
+        if (found) {
+          if (!alive) return;
+          setSelectedUser(found);
         } else {
+          // 3) ไม่มีก็ "สร้างห้องใหม่" + เติม peer info + โหลดข้อความทันที (กันจอฟ้า/ขาว)
           const r = await api.post("/api/chat/conversations", { peerId: peerFromQuery });
           const cid = r.data.conversationId || r.data._id;
+
+          // (ออปชั่น) ดึงข้อมูล peer ให้ครบทันที
+          let peerInfo = { _id: peerFromQuery, name: "", username: "", email: "", avatar: null };
+          try {
+            const u = await api.get(`/api/profile/userid/${peerFromQuery}`);
+            const d = u.data || {};
+            peerInfo = {
+              _id: peerFromQuery,
+              name: d.name || "",
+              username: d.username || "",
+              email: d.email || "",
+              avatar: d.avatar || null,
+            };
+          } catch (_) {}
+
           const placeholder = {
             conversationId: cid,
-            peer: { _id: peerFromQuery, name: "", email: "", avatar: null },
+            peer: peerInfo,
             lastMessageText: "",
             lastMessageAt: null,
             unread: 0,
           };
-          setUsers((prev) => [placeholder, ...prev]);
+
+          if (!alive) return;
+          setUsers(prev => [placeholder, ...prev]);
           setSelectedUser(placeholder);
+
+          // ✅ โหลดข้อความของห้องใหม่ "ทันที" เพื่อกันหน้าว่าง
+          setConversationId(cid);                     // ให้ effect join/markRead ทำงานต่อ
+          const mRes = await api.get(`/api/chat/messages?conversationId=${cid}`);
+          if (!alive) return;
+          setMessages(Array.isArray(mRes.data) ? mRes.data : []);
         }
-        // ล้าง query ?peer=...
+
+        // 4) เคลียร์ query ?peer=... ออกจาก URL (ไม่รีโหลด)
         const url = new URL(window.location.href);
         url.searchParams.delete("peer");
         window.history.replaceState({}, "", url.toString());
       } else {
+        // ไม่มี peer ใน query → เลือกห้องล่าสุดถ้ามี
         if (items.length > 0) setSelectedUser(items[0]);
       }
-    })();
-  }, [peerFromQuery]);
+    } catch (e) {
+      console.error("load conversations failed", e);
+    }
+  })();
+
+  return () => { alive = false; };
+}, [peerFromQuery]);
+
 
   // ------------------------ Load messages on selectedUser change ------------------------
-  useEffect(() => {
-    if (!selectedUser?.peer?._id) return;
-    let alive = true;
-    (async () => {
-      setMessages([]); // clear flash
-      setPendingImages([]); // ล้างพรีวิวรูปค้างจากห้องก่อนหน้า
+  // useEffect(() => {
+  //   if (!selectedUser?.peer?._id) return;
+  //   let alive = true;
+  //   (async () => {
+  //     setMessages([]); // clear flash
+  //     setPendingImages([]); // ล้างพรีวิวรูปค้างจากห้องก่อนหน้า
 
-      const res = await api.post("/api/chat/conversations", { peerId: selectedUser?.peer?._id });
+  //     const res = await api.post("/api/chat/conversations", { peerId: selectedUser?.peer?._id });
+  //     const cid = res.data.conversationId || res.data._id;
+  //     if (!alive) return;
+  //     setConversationId(cid);
+
+  //     const messagesRes = await api.get(`/api/chat/messages?conversationId=${cid}`);
+  //     const arr = Array.isArray(messagesRes.data) ? messagesRes.data : [];
+  //     if (!alive) return;
+  //     setMessages(arr);
+  //   })();
+  //   return () => {
+  //     alive = false;
+  //   };
+  // }, [selectedUser]);
+  // ------------------------ Load messages on selectedUser change ------------------------
+useEffect(() => {
+  if (!selectedUser?.peer?._id) return;
+
+  let alive = true;
+
+  (async () => {
+    // 1) ถ้า selectedUser มี conversationId อยู่แล้ว
+    if (selectedUser.conversationId) {
+      // ถ้าเป็นห้องเดิมก็ไม่ต้องโหลดซ้ำ
+      if (String(conversationId) === String(selectedUser.conversationId)) return;
+
+      setMessages([]);          // clear flash
+      setPendingImages([]);     // ล้างพรีวิวรูปค้าง
+      const cid = selectedUser.conversationId;
+      if (!alive) return;
+      setConversationId(cid);
+
+      try {
+        const messagesRes = await api.get(`/api/chat/messages?conversationId=${cid}`);
+        const arr = Array.isArray(messagesRes.data) ? messagesRes.data : [];
+        if (!alive) return;
+        setMessages(arr);
+      } catch (e) {
+        console.error("load messages failed", e);
+      }
+      return;
+    }
+
+    // 2) ถ้ายังไม่มี conversationId (เช่น เพิ่งคลิกชื่อคนจาก sidebar ที่เป็น placeholder)
+    try {
+      setMessages([]);
+      setPendingImages([]);
+
+      const res = await api.post("/api/chat/conversations", { peerId: selectedUser.peer._id });
       const cid = res.data.conversationId || res.data._id;
       if (!alive) return;
       setConversationId(cid);
@@ -149,11 +269,14 @@ const onPastePlain = (e) => {
       const arr = Array.isArray(messagesRes.data) ? messagesRes.data : [];
       if (!alive) return;
       setMessages(arr);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [selectedUser]);
+    } catch (e) {
+      console.error("ensure conversation failed", e);
+    }
+  })();
+
+  return () => { alive = false; };
+}, [selectedUser, conversationId]);
+
 
   // ------------------------ Join / Leave room ------------------------
   useEffect(() => {

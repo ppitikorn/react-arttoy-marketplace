@@ -1,6 +1,7 @@
 // routes/chat.js
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { authenticateJWT, isAdmin } = require('../middleware/auth');
 const User = require('../models/User');
 const Message = require('../models/Message');

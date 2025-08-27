@@ -6,7 +6,7 @@ const notificationSchema = new Schema(
   {
     recipient: { type: Schema.Types.ObjectId, ref: 'User', index: true, required: true }, // คนที่จะได้รับแจ้งเตือน
     actor: { type: Schema.Types.ObjectId, ref: 'User' }, // คนที่กดไลค์/ส่งข้อความ ฯลฯ
-    type: { type: String, enum: ['message', 'like', 'comment', 'system'], required: true },
+    type: { type: String, enum: ['message', 'like', 'system','product'], required: true },
     title: { type: String, trim: true },
     body: { type: String, trim: true },
 

@@ -107,7 +107,6 @@ const AdminUsers = () => {
 
   const statusColorMap = {
         active: 'bg-green-100 text-green-800',
-        inactive: 'bg-gray-100 text-gray-800',
         banned: 'bg-red-100 text-red-800',
         suspended: 'bg-yellow-100 text-yellow-800',
       };
@@ -121,7 +120,7 @@ const AdminUsers = () => {
       <div className="flex justify-between items-center mb-6">
         <div className="space-y-4 w-full p-3">
           <h2 className="text-2xl font-bold text-gray-800">User Management</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200">
               <div className="text-lg font-semibold text-gray-800">{users.length}</div>
               <div className="text-sm text-gray-600">Total Users</div>
@@ -131,12 +130,6 @@ const AdminUsers = () => {
                 {users.filter(user => user.status.state === 'active').length}
               </div>
               <div className="text-sm text-green-600">Active Users</div>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-lg shadow-md border border-gray-200">
-              <div className="text-lg font-semibold text-gray-800">
-                {users.filter(user => user.status.state === 'inactive').length}
-              </div>
-              <div className="text-sm text-gray-600">Inactive Users</div>
             </div>
             <div className="bg-red-50 p-4 rounded-lg shadow-md border border-red-200">
               <div className="text-lg font-semibold text-red-800">
@@ -430,7 +423,6 @@ const AdminUsers = () => {
                     className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   >
                     <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
                     <option value="banned">Banned</option>
                     <option value="suspended">Suspended</option>
                   </select>

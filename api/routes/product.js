@@ -137,25 +137,51 @@ router.get('/', async (req, res) => {
   try {
     const { category, brand, tags, rarity, seller } = req.query;
 
-    // Build the filter object
-    const filter = {};
+    // -------- Build base filter (เหมือนเดิม) --------
+    const filter = {
+      status: { $ne: 'Hidden' }
+    };
     if (category) filter.category = category;
-    if (brand) filter.brand = brand;
-    if (tags) filter.tags = { $in: tags.split(',') };
-    if (rarity) filter.rarity = rarity;
-    
-    // Filter by seller username
-    if (seller) {
-      const sellerUser = await User.findOne({ username: seller });
-      if (sellerUser) {
-        filter.seller = sellerUser._id;
-      } else {
-        return res.status(200).json([]); // Return empty array if seller not found
-      }
+    if (brand)    filter.brand = brand;
+    if (rarity)   filter.rarity = rarity;
+
+    if (tags) {
+      const tagArr = String(tags).split(',').map(s => s.trim()).filter(Boolean);
+      if (tagArr.length) filter.tags = { $in: tagArr };
     }
 
-    const products = await Product.find(filter).populate('seller', 'avatar username name emailVerified'); // Populate seller info
-    res.status(200).json(products);
+    // seller: username -> _id (ไม่เจอ = คืนว่าง)
+    if (seller) {
+      const s = await User.findOne({ username: seller }).select('_id').lean();
+      if (!s) return res.status(200).json([]);
+      filter.seller = s._id;
+    }
+    // -------- Aggregate + lookup เฉพาะ seller ที่ active --------
+    const pipeline = [
+      { $match: filter },
+
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'seller',
+          foreignField: '_id',
+          as: 'seller',
+          pipeline: [
+            // ✅ ตัดผู้ใช้ที่โดนแบน/ระงับ (เราเอา inactive ออกแล้ว เหลือ active/suspended/banned)
+            { $match: { 'status.state': 'active' } },
+            { $project: { _id: 1, avatar: 1, username: 1, name: 1, emailVerified: 1 } },
+          ],
+        },
+      },
+      // ถ้า lookup ไม่เจอ (เช่น seller ถูกแบน/ระงับ) -> ตัดสินค้าออก
+      { $match: { seller: { $ne: [] } } },
+      { $unwind: '$seller' },
+    ];
+
+    const items = await Product.aggregate(pipeline).allowDiskUse(true);
+
+    // ส่งทรงเดียวกับเดิม (มี seller ที่ถูก "populate" แล้ว)
+    return res.status(200).json(items);
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Failed to fetch products' });
@@ -334,6 +360,7 @@ if (seller) {
           foreignField: '_id',
           as: 'seller',
           pipeline: [
+            { $match: { "status.state": "active" } },
             { $project: { _id: 1, username: 1, avatar: 1, name: 1, emailVerified: 1 } },
           ],
       } },

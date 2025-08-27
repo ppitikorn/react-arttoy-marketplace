@@ -14,6 +14,12 @@ function ProductCard({ product , isSold = false}) {
   return (
     <>
     {isSold ? (
+      <Link
+          key={product._id}
+          to={`/products/${product.slug}`}
+          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg hover:scale-105 
+          transition-transform transition-shadow duration-300 flex flex-col h-full"
+        >
         <div className="relative bg-gray-200 rounded-lg shadow-md overflow-hidden opacity-75 flex flex-col h-full">
           {/* Sold overlay */}
           <div className="absolute inset-0 bg-black/75 z-10 flex items-center justify-center">
@@ -22,13 +28,17 @@ function ProductCard({ product , isSold = false}) {
             </div>
           </div>
           {/* Image container with fixed height */}
-          {hasImages ? (<div className="relative w-full aspect-[4/5] overflow-hidden rounded-t-2xl bg-gray-100">
+          {hasImages ? (
+            <div className="relative w-full overflow-hidden rounded-t-2xl">
+                  <div className="pb-[100%]" />
                   <img
                         src={product.images[0]}
                         alt={product.title}
-                        className="w-full h-48 object-cover grayscale"
+                        className="absolute inset-0 h-full w-full object-cover block"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
                     />
-                </div>
+                  </div>
                   ):(
                   <div className="bg-red-100 text-red-600 p-4 rounded text-center">❌ ไม่มีรูปภาพสินค้า</div>
                 )}
@@ -82,6 +92,7 @@ function ProductCard({ product , isSold = false}) {
             </div>
           </div>
         </div> 
+        </Link>
       ) : (
         <Link
           key={product._id}

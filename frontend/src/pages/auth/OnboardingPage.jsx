@@ -85,14 +85,13 @@ export default function Onboarding() {
   const submit = async () => {
     setSubmitting(true);
     try {
-      await api.put("/api/pref/preferences", {
+      const { data } = await api.put("/api/pref/preferences", {
         categories: selCats,      // string[]
         brands: selBrandIds,      // ObjectId[]
         tags: selTagIds,          // ObjectId[]
         // weights ไม่ต้องส่งก็ได้ (ใช้ default ใน model)
       });
-      const me = await api.get("/api/auth/me");
-      setUser(me.data);
+      setUser(prev => ({ ...prev, ...data.user }));
       await refreshUser();
       navigate("/", { replace: true });
     } catch (e) {

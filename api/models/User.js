@@ -85,7 +85,7 @@ const userSchema = new mongoose.Schema({
   status: {
     state: {
       type: String,
-      enum: ['active', 'inactive', 'banned', 'suspended'],
+      enum: ['active', 'banned', 'suspended'],
       default: 'active'
     },
     reason: {
@@ -111,6 +111,7 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   }],
+  hasOnboarded: { type: Boolean, default: false },
   preferences: { type: PreferencesSchema, default: () => ({}) },
   oauthProviders: [{
     providerName: {

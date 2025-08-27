@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ChatButton from '../../components/common/ChatButton.jsx';
@@ -9,11 +9,13 @@ const Seller = () => {
   const { username } = useParams();
   const { user: currentUser } = useAuth();
   const [seller, setSeller] = useState(null);
-  const [products, setProducts] = useState([]);
+  //const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [activeTab, setActiveTab] = useState('published')
+  const [allProducts, setAllProducts] = useState([]);
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalViews: 0,
@@ -22,6 +24,31 @@ const Seller = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 20;
+
+  const calcStats = (arr) => ({
+    totalProducts: arr.length,
+    totalViews: arr.reduce((sum, p) => sum + (p.views || 0), 0),
+    totalLikes: arr.reduce((sum, p) => sum + (p.likes?.length || 0), 0),
+    soldProducts: arr.filter(p => p.isSold).length,
+  });
+
+  const publishedProducts = useMemo(
+    () => allProducts.filter(p => String(p.status).toLowerCase() === 'published'),
+    [allProducts]
+  );
+  const pendingProducts = useMemo(
+    () => allProducts.filter(p => String(p.status).toLowerCase() === 'pending'),
+    [allProducts]
+  );
+  const rejectedProducts = useMemo(
+    () => allProducts.filter(p => String(p.status).toLowerCase() === 'rejected'),
+    [allProducts]
+  );
+  const tabProducts = useMemo(() => {
+    if (activeTab === 'pending') return pendingProducts;
+    if (activeTab === 'rejected') return rejectedProducts;
+    return publishedProducts;
+  }, [activeTab, publishedProducts, pendingProducts, rejectedProducts]);
 
   useEffect(() => {
     if (username) {
@@ -62,26 +89,25 @@ const Seller = () => {
     try {
       setProductsLoading(true);
       const response = await api.get(`/api/products?seller=${username}`);
-      setProducts(response.data);
-      
-      // Calculate stats
-      const totalProducts = response.data.length;
-      const totalViews = response.data.reduce((sum, product) => sum + (product.views || 0), 0);
-      const totalLikes = response.data.reduce((sum, product) => sum + (product.likes?.length || 0), 0);
-      const soldProducts = response.data.filter(product => product.isSold).length;
-      
-      setStats({
-        totalProducts,
-        totalViews,
-        totalLikes,
-        soldProducts
-      });
+      const list = Array.isArray(response.data) ? response.data : [];
+      setAllProducts(list);
     } catch (error) {
       console.error('Error fetching seller products:', error);
+      setAllProducts([]);
     } finally {
       setProductsLoading(false);
     }
   };
+  // โหลดตอนเข้า/เปลี่ยน seller
+  useEffect(() => {
+    fetchSellerProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username]);
+
+  // --- อัปเดต stats ตามแท็บทุกครั้งที่สลับแท็บหรือข้อมูลเปลี่ยน ---
+  useEffect(() => {
+    setStats(calcStats(tabProducts));
+  }, [tabProducts]);
 
   if (loading) {
     return (
@@ -262,128 +288,181 @@ const Seller = () => {
                     <div className="text-sm text-gray-500">Sold</div>
                   </div>
                 </div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {isOwnProfile ? 'My Products' : `${seller.name}'s Products`}
-            </h2>
+            <div className="mt-4 flex items-center gap-2">
+  <button
+    onClick={() => { setActiveTab('published'); setCurrentPage(1); }}
+    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+      activeTab === 'published'
+        ? 'bg-[#FF4C4C] text-white'
+        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+    }`}
+  >
+    Published
+  </button>
+
+  {isOwnProfile && (
+    <>
+      <button
+        onClick={() => { setActiveTab('pending'); setCurrentPage(1); }}
+        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          activeTab === 'pending'
+            ? 'bg-[#FF4C4C] text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        Pending
+        {pendingProducts.length > 0 && (
+          <span className="ml-2 inline-block text-xs px-2 py-0.5 rounded-full bg-white/70 text-[#FF4C4C]">
+            {pendingProducts.length}
+          </span>
+        )}
+      </button>
+
+      <button
+        onClick={() => { setActiveTab('rejected'); setCurrentPage(1); }}
+        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          activeTab === 'rejected'
+            ? 'bg-[#FF4C4C] text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        Rejected
+        {rejectedProducts.length > 0 && (
+          <span className="ml-2 inline-block text-xs px-2 py-0.5 rounded-full bg-white/70 text-[#FF4C4C]">
+            {rejectedProducts.length}
+          </span>
+        )}
+      </button>
+    </>
+  )}
+</div>
+
             <p className="text-gray-600 mt-1">
               {stats.totalProducts} product{stats.totalProducts !== 1 ? 's' : ''} listed
             </p>
           </div>
 
           <div className="p-6">
-            {productsLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF4C4C] border-t-transparent"></div>
-              </div>
-            ) : products.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products
-                    .slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage)
-                    .map((product) => (
-                      <div key={product._id} className="text-gray-800 relative">
-                        <ProductCard product={product} isSold={product.isSold} />
-                      </div>
-                    ))}
-                </div>
-                {/* Pagination */}
-                {products.length > productsPerPage && (
-                  <div className="flex justify-center mt-8">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                        className={`px-4 py-2 rounded-lg ${
-                          currentPage === 1
-                            ? 'bg-gray-100 text-gray-400'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        Previous
-                      </button>
-                      {[...Array(Math.ceil(products.length / productsPerPage))].map((_, index) => (
-                        <button
-                          key={index + 1}
-                          onClick={() => setCurrentPage(index + 1)}
-                          className={`px-4 py-2 rounded-lg ${
-                            currentPage === index + 1
-                              ? 'bg-[#FF4C4C] text-white'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          {index + 1}
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => 
-                          setCurrentPage(prev => 
-                            Math.min(prev + 1, Math.ceil(products.length / productsPerPage))
-                          )
-                        }
-                        disabled={currentPage === Math.ceil(products.length / productsPerPage)}
-                        className={`px-4 py-2 rounded-lg ${
-                          currentPage === Math.ceil(products.length / productsPerPage)
-                            ? 'bg-gray-100 text-gray-400'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-12">
-                <svg
-                  className="w-16 h-16 text-gray-300 mx-auto mb-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                  />
-                </svg>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">
-                  {isOwnProfile ? 'No products yet' : 'No products listed'}
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  {isOwnProfile 
-                    ? 'Start selling by posting your first product!' 
-                    : `${seller.name} hasn't listed any products yet.`
-                  }
-                </p>
-                {isOwnProfile && (
-                  <Link
-                    to="/post-product"
-                    className="bg-[#FF4C4C] hover:bg-red-600 text-white px-6 py-3 rounded-lg transition-colors
-                     inline-flex items-center gap-2"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    Post Your First Product
-                  </Link>
-                )}
-              </div>
-            )}
+  {productsLoading ? (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF4C4C] border-t-transparent"></div>
+    </div>
+  ) : tabProducts.length > 0 ? (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {tabProducts
+          .slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage)
+          .map((product) => (
+            <div key={product._id} className="text-gray-800 relative">
+              <ProductCard product={product} isSold={product.isSold} />
+              {/* badge สถานะเล็ก ๆ มุมการ์ด */}
+              {activeTab !== 'published' && (
+                <span className={`absolute top-2 left-2 text-xs px-2 py-1 rounded-md text-white
+                  ${activeTab === 'pending' ? 'bg-amber-500' : 'bg-gray-700'}`}>
+                  {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                </span>
+              )}
+            </div>
+          ))}
+      </div>
+
+      {/* Pagination */}
+      {tabProducts.length > productsPerPage && (
+        <div className="flex justify-center mt-8">
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg ${
+                currentPage === 1
+                  ? 'bg-gray-100 text-gray-400'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Previous
+            </button>
+
+            {[...Array(Math.ceil(tabProducts.length / productsPerPage))].map((_, index) => (
+              <button
+                key={index + 1}
+                onClick={() => setCurrentPage(index + 1)}
+                className={`px-4 py-2 rounded-lg ${
+                  currentPage === index + 1
+                    ? 'bg-[#FF4C4C] text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+
+            <button
+              onClick={() =>
+                setCurrentPage(prev =>
+                  Math.min(prev + 1, Math.ceil(tabProducts.length / productsPerPage))
+                )
+              }
+              disabled={currentPage === Math.ceil(tabProducts.length / productsPerPage)}
+              className={`px-4 py-2 rounded-lg ${
+                currentPage === Math.ceil(tabProducts.length / productsPerPage)
+                  ? 'bg-gray-100 text-gray-400'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              Next
+            </button>
           </div>
+        </div>
+      )}
+    </>
+  ) : (
+    // Empty state ต่อแท็บ
+    <div className="text-center py-12">
+      <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+      </svg>
+
+      {activeTab === 'published' && (
+        <>
+          <h3 className="text-lg font-medium text-gray-700 mb-2">
+            {isOwnProfile ? 'No products yet' : 'No products listed'}
+          </h3>
+          <p className="text-gray-500 mb-4">
+            {isOwnProfile
+              ? 'Start selling by posting your first product!'
+              : `${seller.name} hasn't listed any products yet.`}
+          </p>
+          {isOwnProfile && (
+            <Link
+              to="/post-product"
+              className="bg-[#FF4C4C] hover:bg-red-600 text-white px-6 py-3 rounded-lg transition-colors inline-flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+              </svg>
+              Post Your First Product
+            </Link>
+          )}
+        </>
+      )}
+
+      {activeTab === 'pending' && (
+        <>
+          <h3 className="text-lg font-medium text-gray-700 mb-2">No pending products</h3>
+          <p className="text-gray-500">Products you submit will appear here while waiting for review.</p>
+        </>
+      )}
+
+      {activeTab === 'rejected' && (
+        <>
+          <h3 className="text-lg font-medium text-gray-700 mb-2">No rejected products</h3>
+          <p className="text-gray-500">Great! You don’t have any rejected items.</p>
+        </>
+      )}
+    </div>
+  )}
+</div>
+
         </div>
 
 
