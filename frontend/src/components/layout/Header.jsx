@@ -82,7 +82,7 @@ export default function Header() {
             onClick={() => setOpen(false)}
           >
             <img
-              src={"/src/assets/image-Photoroom.png" ||"src/assets/mytoyverselogo.png"}
+              src={"https://res.cloudinary.com/dmzmufy56/image/upload/v1756256872/image-Photoroom_zpj0ww.png" ||"https://res.cloudinary.com/dmzmufy56/image/upload/v1756256874/mytoyverselogo_fcayyv.png"}
               className="h-10 w-10 object-contain"
               alt="Arttoy Marketplace"
             />
