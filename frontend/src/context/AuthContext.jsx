@@ -2,7 +2,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -108,7 +107,17 @@ export const AuthProvider = ({ children }) => {
     navigate('/');
   };
 
-  const value = { user, loading, login, register, logout, setUser, token ,setToken};
+  const refreshUser = async () => {
+    try {
+      const res = await api.get('/api/auth/me'); // endpoint ที่ส่ง user ปัจจุบัน
+      setUser(res.data?.user || null);
+      console.log("User refreshed", res.data?.user);
+    } catch (e) {
+      console.error('refreshUser failed', e);
+    }
+  };
+
+  const value = { user, loading, login, register, logout, setUser, token ,setToken, refreshUser};
 
   return (
     <AuthContext.Provider value={value}>

@@ -12,6 +12,8 @@ import './App.css';
 
 import ChatPlayground from './pages/chat/ChatPlayground';
 import ScrollToTop from "../src/components/common/ScrollToTop.jsx";
+import RequireOnboarding from "./components/auth/RequireOnboarding.jsx";
+import OnboardingPage from './pages/auth/OnboardingPage.jsx';
 
 // ------- Lazy pages --------
 const Home = lazy(() => import('./pages/Home'));
@@ -38,6 +40,7 @@ const AdminReport = lazy(() => import('./pages/admin/AdminReport'));
 const AdminReport2 = lazy(() => import('./pages/admin/AdminReport2'));
 const AdminReport3 = lazy(() => import('./pages/admin/AdminReport3'));
 
+
 function App() {
   return (
     <Router>
@@ -46,64 +49,66 @@ function App() {
           <Layout>
             <Suspense fallback={<div className="p-4">Loading…</div>}>
               <ScrollToTop />
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/oauth/callback" element={<OAuthCallback />} />
+              <RequireOnboarding>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/oauth/callback" element={<OAuthCallback />} />
+                  <Route path="/onboarding" element={<OnboardingPage/>} />
+                  <Route path="/products" element={<ProductList />} />
+                  <Route path="/products/:slug" element={<ProductDetail />} />
 
-                <Route path="/products" element={<ProductList />} />
-                <Route path="/products/:slug" element={<ProductDetail />} />
-
-                <Route path="/profile/:username" element={<Seller />} />
-                <Route
-                  path="/products/edit/:slug"
-                  element={
-                    <ProtectedRoute>
-                      <ProductEdit />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/post-product"
-                  element={
-                    <ProtectedRoute>
-                      <PostProduct />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/chat"
-                  element={
-                    <ProtectedRoute>
-                      <ChatPlayground />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute allowedRole="admin">
-                      <AdminLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route path="users" element={<AdminUsers />} />
-                  <Route path="brands" element={<AdminBrands />} />
-                  <Route path="products" element={<AdminProducts />} />
-                  <Route path="tags" element={<AdminTags />} />
-                  <Route path="reports" element={<AdminReport />} />
-                  <Route path="reports2" element={<AdminReport2 />} />
-                  <Route path="reports3" element={<AdminReport3 />} />
-                </Route>
-              </Routes>
+                  <Route path="/profile/:username" element={<Seller />} />
+                  <Route
+                    path="/products/edit/:slug"
+                    element={
+                      <ProtectedRoute>
+                        <ProductEdit />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/post-product"
+                    element={
+                      <ProtectedRoute>
+                        <PostProduct />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/chat"
+                    element={
+                      <ProtectedRoute>
+                        <ChatPlayground />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute allowedRole="admin">
+                        <AdminLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route path="users" element={<AdminUsers />} />
+                    <Route path="brands" element={<AdminBrands />} />
+                    <Route path="products" element={<AdminProducts />} />
+                    <Route path="tags" element={<AdminTags />} />
+                    <Route path="reports" element={<AdminReport />} />
+                    <Route path="reports2" element={<AdminReport2 />} />
+                    <Route path="reports3" element={<AdminReport3 />} />
+                  </Route>
+                </Routes>
+                </RequireOnboarding>
             </Suspense>
           </Layout>
         </ChatProvider>

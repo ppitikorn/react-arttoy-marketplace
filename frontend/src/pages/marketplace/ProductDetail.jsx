@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import ReportButton from '../../components/common/ReportButton';
 import ChatButton from '../../components/common/ChatButton';
 import api from '../../utils/api';
+import ProductCard from '../../components/common/ProductCard';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -17,6 +18,7 @@ const ProductDetail = () => {
   const [likesCount, setLikesCount] = useState(0);
   const [viewsCount, setViewsCount] = useState(0);
   const [isSeller, setIsSeller] = useState(false);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -36,13 +38,11 @@ const ProductDetail = () => {
       const response = await api.post(`/api/products/${slug}/view`, {
         userId: user?._id || null,
         sessionId: getSessionId(),
-        userAgent: navigator.userAgent,
-        ip: 'client_ip' // In production, get this from server
       });
 
       if (response.data.success) {
         setViewsCount(response.data.viewsCount);
-        //console.log(response.data.message);
+        console.log(response.data.message);
       }
     } catch (error) {
       console.error('Error tracking view:', error);
@@ -78,6 +78,18 @@ const ProductDetail = () => {
         setLoading(false);
       }
     };
+  const fetchRecomProd = async () => {
+    if (!product) return;
+
+    try {
+      const res = await api.get('/api/products/recommends/item', { params: { limit: 12 } });
+      setRecommendedProducts(res.data.items.map(r => r.product));
+      console.log('Recommended products:', recommendedProducts);
+
+    } catch (error) {
+      console.error('Error fetching recommended products:', error);
+    }
+  };
   const checkUserRole = () => {
     if (!product || !product.seller) {
       setIsSeller(false);
@@ -107,63 +119,111 @@ const ProductDetail = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (product) {
-      checkUserRole();
-    }
-  }, [user, product]);
+  if (product) {
+    checkUserRole(); 
+    fetchRecomProd();
+  }
+}, [product, user]);
 
-  const handleLikeToggle = async () => {
-    // Check if user is logged in
-    if (!user) {
-      alert('Please login to like products');
-      navigate('/login');
-      return;
-    }
+  // const handleLikeToggle = async () => {
+  //   // Check if user is logged in
+  //   if (!user) {
+  //     alert('Please login to like products');
+  //     navigate('/login');
+  //     return;
+  //   }
 
-    // Prevent sellers from liking their own products
-    if (isSeller) {
-      alert('You cannot like your own product');
-      return;
-    }
+  //   // Prevent sellers from liking their own products
+  //   if (isSeller) {
+  //     alert('You cannot like your own product');
+  //     return;
+  //   }
 
-    setLikeLoading(true);
+  //   setLikeLoading(true);
     
-    // Optimistic update
-    const wasLiked = isLiked
-    const newLikes = wasLiked 
-      ? product.likes.filter(id => id !== user._id)
-      : [...product.likes, user._id];
+  //   // Optimistic update
+  //   const wasLiked = isLiked
+  //   const newLikes = wasLiked 
+  //     ? product.likes.filter(id => id !== user._id)
+  //     : [...product.likes, user._id];
     
-    setProduct(prev => ({
-      ...prev,
-      likes: newLikes
-    }));
+  //   setProduct(prev => ({
+  //     ...prev,
+  //     likes: newLikes
+  //   }));
 
-    try {
-      const url = `/api/products/${slug}/like`;
-      const response = wasLiked ? await api.delete(url) : await api.put(url);
-      // const { isLiked, likesCount } = response.data || {};
-      // Update with server response
-      setProduct(prev => ({
-        ...prev,
-        likes: response.data.isLiked 
-          ? [...prev.likes.filter(id => id !== user._id), user._id]
-          : prev.likes.filter(id => id !== user._id)
-      }));
-      fetchLikeStatus(); // Refresh like status
-    } catch (error) {
-      // Revert optimistic update on error
-      setProduct(prev => ({
-        ...prev,
-        likes: product.likes
-      }));
+  //   try {
+  //     const url = `/api/products/${slug}/like`;
+  //     const response = wasLiked ? await api.delete(url) : await api.put(url);
+  //     // const { isLiked, likesCount } = response.data || {};
+  //     // Update with server response
+  //     setProduct(prev => ({
+  //       ...prev,
+  //       likes: response.data.isLiked 
+  //         ? [...prev.likes.filter(id => id !== user._id), user._id]
+  //         : prev.likes.filter(id => id !== user._id)
+  //     }));
+  //     fetchLikeStatus(); // Refresh like status
+  //   } catch (error) {
+  //     // Revert optimistic update on error
+  //     setProduct(prev => ({
+  //       ...prev,
+  //       likes: product.likes
+  //     }));
       
-      console.error('Error toggling like:', error);
-      alert('Failed to update like status');
-    } finally {
-      setLikeLoading(false);
-    }
-  };
+  //     console.error('Error toggling like:', error);
+  //     alert('Failed to update like status');
+  //   } finally {
+  //     setLikeLoading(false);
+  //   }
+  // };
+  // สมมติว่าตอน mount ดึงค่าเริ่มต้นมาก่อน
+
+
+// ใช้ตอนโหลดรายละเอียดสินค้า/like-status
+// setIsLiked(resIsLiked); setLikesCount(resLikesCount);
+
+const handleLikeToggle = async () => {
+  if (!user) {
+    alert('Please login to like products');
+    navigate('/login');
+    return;
+  }
+  if (isSeller) {
+    alert('You cannot like your own product');
+    return;
+  }
+  if (likeLoading) return;
+  setLikeLoading(true);
+
+  // optimistic
+  const prevLiked = isLiked;
+  const prevCount = likesCount;
+  const nextLiked = !prevLiked;
+  const nextCount = prevCount + (prevLiked ? -1 : +1);
+  setIsLiked(nextLiked);
+  setLikesCount(nextCount);
+
+  try {
+    const url = `/api/products/${slug}/like`;
+    prevLiked ? await api.delete(url) : await api.put(url);
+
+    // ไม่ต้องเซ็ต product เลย ลด side effects
+    // ถ้าอยาก sync ให้ชัวร์ก็เรียก like-status แบบเบา ๆ ก็ได้ แต่ปกติไม่จำเป็น
+    // const { data } = await api.get(`/api/products/${slug}/like-status`);
+    // setIsLiked(data.isLiked); setLikesCount(data.likesCount);
+
+  } catch (err) {
+    // revert ถ้าพลาด
+    setIsLiked(prevLiked);
+    setLikesCount(prevCount);
+    console.error('Error toggling like:', err);
+    alert('Failed to update like status');
+  } finally {
+    setLikeLoading(false);
+  }
+};
+
   const handleMarkAsSold = async (e) => {
     e.preventDefault();
     if (loading) return;
@@ -373,26 +433,6 @@ const ProductDetail = () => {
                     </button>
                     {/* Contact Button - Temporarily disabled */}
                     <ChatButton userId={product?.seller?._id} />
-                    {/* <button
-                      onClick={handleChat}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-yellow-300 text-yellow-800 rounded-lg font-medium border-2 border-yellow-800 hover:bg-yellow-400 hover:border-yellow-600 hover:scale-101 transition-transform"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                        />
-                      </svg>
-                      <span>Chat</span>
-                    </button> */}
                   </>
                 )}
                 {isSeller && (
@@ -482,12 +522,10 @@ const ProductDetail = () => {
         )}
         <div className="bg-white rounded-lg shadow-md mt-6 p-6">
             <h2 className="text-lg font-semibold mb-4 text-gray-900">Similar Products</h2>
-            <div className="flex flex-wrap gap-2">
-                <span
-                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
-                >
-                  #
-                </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 text-gray-700">
+                {recommendedProducts.map(p => (
+                  <ProductCard key={p._id} product={p} />
+                ))}
             </div>
           </div>
         {/* Back to Products Button */}

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateJWT } = require('../middleware/auth');
+const { authenticateJWT , optionalAuth } = require('../middleware/auth');
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const User = require('../models/User');
@@ -14,6 +14,7 @@ const { cloudinary } = require('../config/cloudinaryConfig'); // Import Cloudina
 const { moderatePost,moderateImage } = require('../config/google-vision'); // Import Google Vision label detection function
 const { createNotification } = require('../services/notifyService');
 const { getIO } = require('../socketServer');
+const {getRecommendations } = require('../services/recoService');
 
 
 
@@ -739,81 +740,69 @@ router.get('/:slug/like-status', authenticateJWT, async (req, res) => {
 router.post('/:slug/view', async (req, res) => {
   try {
     const { slug } = req.params;
-    const { userId, sessionId, userAgent, ip } = req.body;
+    const { userId, sessionId } = req.body; // ip, userAgent ไม่ต้องรับจาก client แล้ว
+    const { ip, userAgent, referrer } = req.clientMeta || {};
 
     const product = await Product.findOne({ slug });
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Don't count view if user is the seller
     if (userId && product.seller.toString() === userId) {
       return res.json({
-        success: true,
-        viewCounted: false,
-        viewsCount: product.views,
+        success: true, viewCounted: false, viewsCount: product.views,
         message: 'Own product view not counted'
       });
     }
 
-    // Check for duplicate views (within last 24 hours)
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    
+    const oneDayAgo = new Date(Date.now() - 24*60*60*1000);
     let shouldCountView = true;
-    
+
     if (userId) {
-      // For logged-in users: check if they viewed this product recently
-      const recentView = await ProductView.findOne({
+      const recent = await ProductView.findOne({
         product: product._id,
-        userId: userId,
+        userId,
         createdAt: { $gte: oneDayAgo }
       });
-      shouldCountView = !recentView;
+      shouldCountView = !recent;
     } else {
-      // For anonymous users: check by session/IP
-      const recentView = await ProductView.findOne({
+      const recent = await ProductView.findOne({
         product: product._id,
-        $or: [
-          { sessionId: sessionId },
-          { ip: ip }
-        ],
+        $or: [{ sessionId }, { ip }],
         createdAt: { $gte: oneDayAgo }
       });
-      shouldCountView = !recentView;
+      shouldCountView = !recent;
     }
 
     if (shouldCountView) {
-      // Increment view counter
-      product.views = (product.views || 0) + 1;
-      await product.save();
+      // ใช้ $inc จะเบากว่า
+      await Product.updateOne({ _id: product._id }, { $inc: { views: 1 } });
 
-      // Record the view for duplicate prevention
-      const newView = new ProductView({
+      await ProductView.create({
         product: product._id,
         userId: userId || null,
-        sessionId: sessionId,
-        ip: ip,
-        userAgent: userAgent
+        sessionId,
+        ip,
+        userAgent,
+        referrer
       });
-      await newView.save();
 
-      res.json({
+      // อ่านค่าปัจจุบันกลับ (optional) หรือให้ client ดึงใหม่ตอนหน้า
+      const fresh = await Product.findById(product._id).select('views').lean();
+
+      return res.json({
         success: true,
         viewCounted: true,
-        viewsCount: product.views,
+        viewsCount: fresh?.views ?? product.views + 1,
         message: 'View counted successfully'
-      });
-    } else {
-      res.json({
-        success: true,
-        viewCounted: false,
-        viewsCount: product.views,
-        message: 'Duplicate view not counted'
       });
     }
 
-  } catch (error) {
-    console.error('View tracking error:', error);
+    const fresh = await Product.findById(product._id).select('views').lean();
+    return res.json({
+      success: true, viewCounted: false, viewsCount: fresh?.views ?? product.views,
+      message: 'Duplicate view not counted'
+    });
+  } catch (e) {
+    console.error('View tracking error:', e);
     res.status(500).json({ message: 'Failed to track view' });
   }
 });
@@ -898,6 +887,46 @@ router.get('/randoms/item', async (req, res) => {
   } catch (err) {
     console.error('random products error:', err);
     res.status(500).json({ message: 'Failed to fetch random products' });
+  }
+});
+// Get recommendations
+router.get('/recommends/item', optionalAuth, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 12, 50);
+    const excludeProductId = req.query.exclude || null;
+
+    let userDoc = null;
+    if (req.user?._id) {
+      userDoc = await User.findById(req.user._id).select('preferences likedProducts').lean();
+    }
+
+    // ถ้าไม่ล็อกอิน → ทำโหมด guest: ไม่มี prior/behavior มีแต่ popularity
+    const fakeUser = userDoc || { preferences: null, likedProducts: [] };
+
+    const recos = await getRecommendations({ user: fakeUser, limit, excludeProductId });
+    // ส่งเฉพาะ fields ที่ต้องใช้แสดงผล
+    res.json({
+      items: recos.map(r => ({
+        score: r.score,
+        parts: r.parts,
+        product: {
+          _id: r.product._id,
+          title: r.product.title,
+          slug: r.product.slug,
+          price: r.product.price,
+          condition: r.product.condition,
+          rarity: r.product.rarity,
+          images: [r.product.images] || [] || null,
+          category: r.product.category,
+          brand: r.product.brand,
+          tags: r.product.tags,
+          seller: r.product.seller,
+        }
+      }))
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message:'Failed to fetch recommendations' });
   }
 });
 

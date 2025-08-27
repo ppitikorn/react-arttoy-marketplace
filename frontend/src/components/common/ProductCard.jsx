@@ -7,8 +7,9 @@ function ProductCard({ product , isSold = false}) {
   const hasSeller = !!product.seller;
   const hasImages = product.images && product.images.length > 0;
 
-  if (!hasSeller) console.error('Missing seller:', product);
-  if (!hasImages) console.error('Missing images:', product);
+
+  // if (!hasSeller) console.error('Missing seller:', product);
+  // if (!hasImages) console.error('Missing images:', product);
 
   return (
     <>
@@ -91,7 +92,7 @@ function ProductCard({ product , isSold = false}) {
           {/* Image container with fixed height */}
           <div className="aspect-w-1 aspect-h-1">
               <img
-                  src={product.images[0]}
+                  src={product.images[0] || 'https://placehold.co/600x400'}
                   alt={product.title}
                   className="w-full h-48 object-cover"
               />

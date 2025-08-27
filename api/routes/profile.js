@@ -4,6 +4,7 @@ const { authenticateJWT } = require('../middleware/auth');
 const User = require('../models/User');
 const {uploadProfile} = require('../middleware/uploadMiddleware'); // Import the upload middleware
 const { cloudinary } = require('../config/cloudinaryConfig');
+const { updateUserPreferences } = require('../services/preferencesService');
 
 // Use development email config if in development mode
 const emailConfig = process.env.NODE_ENV === 'development' ? require('../config/emailConfig.dev')
@@ -307,4 +308,15 @@ router.get('/user/:username', async (req, res) => {
   }
 });
 
+
+router.put('/preferences', authenticateJWT, async (req, res) => {
+  try {
+    // body: { categories?:[], brands?:[], tags?:[], weights?:{ categories,brands,tags } }
+    const prefs = await updateUserPreferences(req.user._id, req.body || {});
+    res.json({ ok:true, preferences: prefs });
+  } catch (e) {
+    console.error(e);
+    res.status(400).json({ ok:false, message: e.message });
+  }
+});
 module.exports = router;

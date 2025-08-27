@@ -5,9 +5,12 @@ const passport = require('passport');
 const dotenv = require('dotenv');
 const { createServer } = require('http');
 const initializeSocket = require('./socketServer');
+const { clientMeta } = require('./middleware/clientMeta');
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', true);
+app.use(clientMeta({ mode: 'anonymize' }));
 
 //socket io
 const server = createServer(app);
@@ -36,6 +39,7 @@ const reportRoutes = require('./routes/report');
 const chatRoutes = require('./routes/chat');
 const uploadRoutes = require('./routes/uploads');
 const notifyRoutes =  require('./routes/notifications');
+const prefRoutes = require('./routes/user-preferences');
 const { authenticateJWT, isAdmin } = require('./middleware/auth');
 
 
@@ -49,6 +53,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/notifications', notifyRoutes);
+app.use('/api/pref', prefRoutes);
 
 
 // Connect to MongoDB

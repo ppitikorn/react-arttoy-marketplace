@@ -1,6 +1,22 @@
 // models/User.js
 const mongoose = require('mongoose');
 
+const CategoriesEnum = ["Figure","Action Figure","Blind Box","Plush Toys","Art Work","OTHER"];
+
+const PreferenceWeightsSchema = new mongoose.Schema({
+  categories: { type: Number, default: 1, min: 0 },
+  brands:     { type: Number, default: 1, min: 0 },
+  tags:       { type: Number, default: 1, min: 0 },
+}, { _id: false });
+
+const PreferencesSchema = new mongoose.Schema({
+  categories: [{ type: String, enum: CategoriesEnum, default: [] }],
+  brands:     [{ type: mongoose.Schema.Types.ObjectId, ref: 'Brand', default: [] }],
+  tags:       [{ type: mongoose.Schema.Types.ObjectId, ref: 'Tag', default: [] }],
+  weights:    { type: PreferenceWeightsSchema, default: () => ({}) },
+  updatedAt:  { type: Date, default: Date.now },
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -82,10 +98,6 @@ const userSchema = new mongoose.Schema({
       default: Date.now
     }
   },
-  interests: [{
-    type: String,
-    trim: true
-  }],
   avatar: {
     type: String,
     default: ''
@@ -99,6 +111,7 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   }],
+  preferences: { type: PreferencesSchema, default: () => ({}) },
   oauthProviders: [{
     providerName: {
       type: String,
@@ -133,6 +146,32 @@ userSchema.pre('save', function(next) {
   }
   next();
 });
+userSchema.pre('save', function(next) {
+  if (this.isModified('preferences')) {
+    this.preferences.updatedAt = new Date();
+  }
+  next();
+});
+
+userSchema.methods.updatePreferences = async function (patch) {
+  // patch: { categories?, brands?, tags?, weights? }
+  const p = this.preferences || {};
+  if (patch.categories) p.categories = Array.from(new Set(patch.categories));
+  if (patch.brands)     p.brands     = Array.from(new Set(patch.brands.map(String)));
+  if (patch.tags)       p.tags       = Array.from(new Set(patch.tags.map(String)));
+  if (patch.weights) {
+    p.weights = {
+      categories: patch.weights.categories ?? p.weights?.categories ?? 1,
+      brands:     patch.weights.brands     ?? p.weights?.brands     ?? 1,
+      tags:       patch.weights.tags       ?? p.weights?.tags       ?? 1,
+    };
+  }
+  p.updatedAt = new Date();
+  this.preferences = p;
+  return this.save();
+};
+
+
 
 const User = mongoose.model('User', userSchema);
 
