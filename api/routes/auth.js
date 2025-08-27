@@ -142,7 +142,8 @@ router.get('/me', authenticateJWT, (req, res) => {
       email: req.user.email,
       username: req.user.username,
       role: req.user.role,
-      likesProducts: req.user.likedProducts
+      likesProducts: req.user.likedProducts || [],
+      preferences: req.user.preferences || {},
     }
   });
 });
