@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
 import api from '../../utils/api';
 import BrandSelect from '../../components/form/BrandSelect';
 import TagsSelect from '../../components/form/TagsSelect';
@@ -21,7 +20,6 @@ import {
 } from 'antd';
 import { 
   PlusOutlined, 
-  LoadingOutlined, 
   DeleteOutlined,
   ExclamationCircleOutlined
 } from '@ant-design/icons';

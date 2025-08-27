@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import api from '../../utils/api.js';
 import { format } from 'date-fns';
 import { 
   FiEye, FiEdit2, FiTrash2, FiEyeOff, FiAlertTriangle,
-  FiSearch, FiFilter, FiBarChart2, FiThumbsUp, FiClock
+  FiSearch, FiBarChart2, FiThumbsUp, FiClock
 } from 'react-icons/fi';
 
 const AdminProduct = () => {

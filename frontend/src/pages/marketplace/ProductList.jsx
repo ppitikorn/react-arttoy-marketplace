@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { message, Form, Input, Select, Space, InputNumber, Pagination, Button } from 'antd';
 
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { FiFilter, FiX } from 'react-icons/fi';
 import api from '../../utils/api';
 import BrandSelect from '../../components/form/BrandSelect';

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
 import api from '../../utils/api.js'; // Assuming you have a custom axios instance
 
 function AdminBrands() {

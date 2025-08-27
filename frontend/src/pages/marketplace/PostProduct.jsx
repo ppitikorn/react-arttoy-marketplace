@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import api from '../../utils/api';
 import BrandSelect from '../../components/form/BrandSelect';
 import TagsSelect from '../../components/form/TagsSelect';
@@ -17,9 +16,7 @@ import {
   Typography
 } from 'antd';
 import { 
-  PlusOutlined, 
-  LoadingOutlined, 
-  DeleteOutlined 
+  PlusOutlined 
 } from '@ant-design/icons';
 
 const { Title } = Typography;

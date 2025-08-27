@@ -1,7 +1,6 @@
-import React, { useState, useEffect,useMemo } from 'react';
-import axios from 'axios';
+import { useState, useEffect,useMemo } from 'react';
 import api from '../../utils/api';
-import { format, formatDistanceToNow, isWithinInterval, parseISO } from 'date-fns';
+import { format, formatDistanceToNow, isWithinInterval } from 'date-fns';
 import { 
   FaClock, 
   FaEye, 

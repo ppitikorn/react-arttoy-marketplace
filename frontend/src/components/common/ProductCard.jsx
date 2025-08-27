@@ -1,10 +1,9 @@
-import React from 'react'
 import { Link } from 'react-router-dom';
 
 function ProductCard({ product , isSold = false}) {  
 
   if (!product) return <div className="text-red-500">เกิดข้อผิดพลาด: ไม่พบข้อมูลสินค้า</div>;
-  const hasSeller = !!product.seller;
+  //const hasSeller = !!product.seller;
   const hasImages = product.images && product.images.length > 0;
 
 
