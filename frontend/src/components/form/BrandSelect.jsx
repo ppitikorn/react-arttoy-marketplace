@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Cascader, Spin } from 'antd';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
+import { Cascader } from 'antd';
 
 const transformDataForCascader = (data) => {
     if (!data?.length) return [];

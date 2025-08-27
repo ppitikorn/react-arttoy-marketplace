@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import ReportButton from '../../components/common/ReportButton';
 import ChatButton from '../../components/common/ChatButton';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Table, 
   Card, 
@@ -27,12 +27,10 @@ import {
   CloseCircleOutlined,
   ClockCircleOutlined,
   WarningOutlined,
-  SearchOutlined,
   FilterOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
 import api from '../../utils/api';
-import { format, formatDistanceToNow, isWithinInterval, parseISO } from 'date-fns';
+import { format, formatDistanceToNow, isWithinInterval } from 'date-fns';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;

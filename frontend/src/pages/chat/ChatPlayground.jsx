@@ -229,15 +229,11 @@ const onPastePlain = (e) => {
   // ------------------------ Load messages on selectedUser change ------------------------
 useEffect(() => {
   if (!selectedUser?.peer?._id) return;
-
   let alive = true;
-
   (async () => {
-    // 1) ถ้า selectedUser มี conversationId อยู่แล้ว
     if (selectedUser.conversationId) {
       // ถ้าเป็นห้องเดิมก็ไม่ต้องโหลดซ้ำ
-      if (String(conversationId) === String(selectedUser.conversationId)) return;
-
+      //if (String(conversationId) === String(selectedUser.conversationId)) return;
       setMessages([]);          // clear flash
       setPendingImages([]);     // ล้างพรีวิวรูปค้าง
       const cid = selectedUser.conversationId;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import api from '../../utils/api.js';
 import { Button, Modal, Select, Input, message, Form, Typography } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';

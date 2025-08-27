@@ -1,6 +1,5 @@
 //CRUD Tags for products by admin only
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from 'react';
 import { Table, Button, Input, Modal, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
