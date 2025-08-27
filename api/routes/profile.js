@@ -104,15 +104,15 @@ router.post('/verify-email', authenticateJWT, async (req, res) => {
     const lastSentTime = user.emailVerificationOTP.sentAt;
     const shouldResetAttempts = !lastSentTime || lastSentTime < oneHourAgo;
 
-    console.log("********************************");
-    console.log(`Last sent time: ${lastSentTime}, One hour ago: ${oneHourAgo}`);
-    console.log(`Current attempts: ${currentAttempts}`);
-    console.log(`Current Last sent time: ${lastSentTime}`);
-    console.log("********************************");
-    console.log(`Last attempt time: ${lastSentTime}`);
-    console.log(`Last attempt time: ${!lastSentTime}`);
-    console.log(`Current attempts: ${lastSentTime < oneHourAgo}`);
-    console.log(`Should reset attempts: ${shouldResetAttempts}`);
+    // console.log("********************************");
+    // console.log(`Last sent time: ${lastSentTime}, One hour ago: ${oneHourAgo}`);
+    // console.log(`Current attempts: ${currentAttempts}`);
+    // console.log(`Current Last sent time: ${lastSentTime}`);
+    // console.log("********************************");
+    // console.log(`Last attempt time: ${lastSentTime}`);
+    // console.log(`Last attempt time: ${!lastSentTime}`);
+    // console.log(`Current attempts: ${lastSentTime < oneHourAgo}`);
+    // console.log(`Should reset attempts: ${shouldResetAttempts}`);
 
 
     if (shouldResetAttempts && currentAttempts > 0) {

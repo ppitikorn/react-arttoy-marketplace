@@ -58,7 +58,7 @@ const Profile = () => {
     }),
   onSubmit: async (values) => {
       try {
-        console.log('Submitting form with values:', values);
+        //console.log('Submitting form with values:', values);
         const token = localStorage.getItem('token');
         const formData = new FormData();
         formData.append('name', values.name);
@@ -70,7 +70,7 @@ const Profile = () => {
         if (values.avatarFile) {
           formData.append('avatarFile', values.avatarFile);
         }
-        console.log('Form data:', formData);
+        //console.log('Form data:', formData);
 
         const response = await api.put('/api/profile', formData, {
           headers: {
@@ -82,7 +82,7 @@ const Profile = () => {
         setIsEditing(false);
         setError('');
         setPreviewUrl(response.data.avatar || '');
-        console.log('Profile updated successfully:', response.data);
+        //console.log('Profile updated successfully:', response.data);
       } catch (err) {
         console.error('Error updating profile:', err);
         setError(err.response?.data?.message || 'Failed to update profile');
@@ -98,8 +98,8 @@ const Profile = () => {
       formik.setFieldTouched('avatarFile', true);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      console.log('File selected:', file);
-      console.log('Preview URL:', url);
+      //console.log('File selected:', file);
+      //console.log('Preview URL:', url);
     }
   };
   useEffect(() => {
@@ -111,7 +111,7 @@ const Profile = () => {
         ]);
         
         const profileData = profileResponse.data;
-        console.log('Profile data fetched:', profileData);
+        //console.log('Profile data fetched:', profileData);
         
         formik.setValues({
           name: profileData.name || '',
@@ -141,7 +141,7 @@ const Profile = () => {
       setOtpError('');
 
       const response = await api.post('/api/profile/verify-email');
-      console.log('Verification email sent:', response.data.message);
+      //console.log('Verification email sent:', response.data.message);
       setShowOTPModal(true);
       
       // Update verification status
@@ -165,7 +165,7 @@ const Profile = () => {
         { otp }
       );
       
-      console.log('Email verified successfully:', response.data.message);
+      //console.log('Email verified successfully:', response.data.message);
       
       // Update user state and form values
       setUser({ ...user, emailVerified: true });

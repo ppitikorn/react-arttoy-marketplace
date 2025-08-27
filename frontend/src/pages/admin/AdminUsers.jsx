@@ -30,7 +30,7 @@ const AdminUsers = () => {
     try {
       const response = await api.get('/api/admin/users');
       setUsers(response.data);
-      console.log('Fetched users:', response.data);
+      //console.log('Fetched users:', response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -44,7 +44,7 @@ const AdminUsers = () => {
         await api.put(`/api/admin/users/${selectedUser._id}`, formData);
       } else {
         // Create new user
-        console.log("formData", formData);
+        //console.log("formData", formData);
         await api.post('/api/admin/users', formData);
       }
       fetchUsers();
@@ -170,7 +170,7 @@ const AdminUsers = () => {
                   lastUpdated: null,
                 }
               });
-              console.log("formData", formData);
+              //console.log("formData", formData);
               setIsModalOpen(true);
             }}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"

@@ -42,7 +42,7 @@ const ProductDetail = () => {
 
       if (response.data.success) {
         setViewsCount(response.data.viewsCount);
-        console.log(response.data.message);
+        //console.log(response.data.message);
       }
     } catch (error) {
       console.error('Error tracking view:', error);
@@ -84,7 +84,7 @@ const ProductDetail = () => {
     try {
       const res = await api.get('/api/products/recommends/item', { params: { limit: 12 } });
       setRecommendedProducts(res.data.items.map(r => r.product));
-      console.log('Recommended products:', recommendedProducts);
+      //console.log('Recommended products:', recommendedProducts);
 
     } catch (error) {
       console.error('Error fetching recommended products:', error);
@@ -229,8 +229,8 @@ const handleLikeToggle = async () => {
     if (loading) return;
 
     const value = e.target.value;
-    console.log('Marking as sold:', value);
-    console.log('product.isSold:', product.isSold);
+    //console.log('Marking as sold:', value);
+    //console.log('product.isSold:', product.isSold);
     setLoading(true);
 
     if (!isSeller) {

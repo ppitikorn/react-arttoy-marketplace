@@ -45,7 +45,7 @@ const AdminProduct = () => {
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
-      console.log("Fetched Products:", products);
+      //console.log("Fetched Products:", products);
       setLoading(false);
     }
   };
@@ -234,7 +234,6 @@ const AdminProduct = () => {
 
   return (
     <div className="p-6 text-gray-800">
-      <button type='button' onClick={()=>{console.log(stats);console.log(reports)}}>เทสๆๆ</button>
       {/* Dashboard Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 ">
         <div className="bg-white p-4 rounded-lg shadow">

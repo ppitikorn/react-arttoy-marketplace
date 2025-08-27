@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await api.get('/api/auth/me'); // endpoint ที่ส่ง user ปัจจุบัน
       setUser(res.data?.user || null);
-      console.log("User refreshed", res.data?.user);
+      //console.log("User refreshed", res.data?.user);
     } catch (e) {
       console.error('refreshUser failed', e);
     }

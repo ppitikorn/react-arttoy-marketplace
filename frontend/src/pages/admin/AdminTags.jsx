@@ -22,7 +22,7 @@ function AdminTags() {
     const fetchTags = async () => {
         try {
         const response = await api.get('/api/admin/tags');
-        console.log(response.data);
+        //console.log(response.data);
         setTags(response.data);
         } catch (error) {
         setError('Failed to fetch tags');

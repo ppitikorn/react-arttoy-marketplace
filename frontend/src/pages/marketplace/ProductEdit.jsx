@@ -220,7 +220,7 @@ export default function ProductEdit() {
       imagesToDelete.forEach(imageUrl => {
         formDataToSend.append('imagesToDelete', imageUrl);
       });
-      console.log('Form data to send:', formDataToSend);
+      //console.log('Form data to send:', formDataToSend);
       const response = await api.put(
         `/api/products/${slug}`, 
         formDataToSend, 
@@ -232,7 +232,7 @@ export default function ProductEdit() {
         }
       );
       
-      console.log('Product updated:', response.data);
+      //console.log('Product updated:', response.data);
       
       message.success('Product updated successfully');
       navigate(`/products/${slug}`); // Redirect to product detail page
@@ -272,7 +272,7 @@ export default function ProductEdit() {
       ...prev,
       ...changedValues
     }));
-    console.log('Form values changed:', changedValues);
+    //console.log('Form values changed:', changedValues);
   };
 
   if (pageLoading) {

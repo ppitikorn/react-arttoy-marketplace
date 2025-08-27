@@ -138,7 +138,7 @@ export default function NotificationBell() {
       navigate(`/chat?conv=${n.refId}`);
       setOpen(false);
     } else if (n.refModel === "Product" && n.refSlug) {
-      console.log(n);
+      //console.log(n);
       navigate(`/products/${n.refSlug}`); // ถ้าใช้ slug ให้ปรับ path
       setOpen(false);
     }
@@ -198,7 +198,7 @@ export default function NotificationBell() {
                     key={n._id}
                     role="menuitem"
                     title="คลิกเพื่อมาร์คว่าอ่านแล้ว"
-                    onClick={() => {handleItemClick(n),console.log(n);}}
+                    onClick={() => {handleItemClick(n)}}
                     className={`cursor-pointer border-b border-slate-100 p-2.5 transition ${
                       busy
                         ? "cursor-wait"
