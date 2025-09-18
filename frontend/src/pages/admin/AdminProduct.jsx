@@ -28,8 +28,6 @@ const AdminProduct = () => {
     topLiked: []
   });
 
-  // Only run once on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProducts();
   }, []);  // We don't need to add fetchProducts as a dependency since it's defined in the same scope
