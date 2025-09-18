@@ -35,7 +35,6 @@ router.get('/conversations', authenticateJWT, async (req, res) => {
       cond.lastMessageAt = { $lt: d };
     }
 
-    // ดึงเฉพาะฟิลด์ที่ต้องใช้ เพื่อลด payload และหลีกเลี่ยง populate-cast
     const convos = await Conversation.find(cond, {
       participants: 1,
       lastMessageAt: 1,
@@ -50,22 +49,18 @@ router.get('/conversations', authenticateJWT, async (req, res) => {
       return res.json({ items: [], nextCursor: null });
     }
 
-    // กรองห้องที่ participants ไม่ครบ 2 (กันข้อมูลเสีย)
+    // ฟิลเตอร์ห้องที่มี participants ครบ 2
     const cleanConvos = convos.filter(c => Array.isArray(c.participants) && c.participants.length >= 2);
 
-    // รวบรวมอีกฝั่ง (1:1) → แปลงเป็น string id เสมอ
-    const otherIds = [];
-    for (const c of cleanConvos) {
-      const others = (c.participants || [])
-        .map(idOf)
-        .filter(Boolean)
-        .filter(pid => pid !== me);
-      const other = others[0]; // 1:1 เลือกคนแรก
-      if (other) otherIds.push(other);
-    }
+    // เอาอีกฝั่งของแชทมา
+    const otherIds = cleanConvos
+      .map(c => (c.participants || []).map(id => id.toString()).find(pid => pid !== me))
+      .filter(Boolean);
 
-    // unique แล้วค่อยยิงหา User
+    // unique ids
     const uniqueOtherIds = [...new Set(otherIds)];
+
+    // ดึง user ที่ยังมีอยู่จริง
     const users = uniqueOtherIds.length
       ? await User.find(
           { _id: { $in: uniqueOtherIds } },
@@ -74,49 +69,43 @@ router.get('/conversations', authenticateJWT, async (req, res) => {
       : [];
     const userMap = new Map(users.map(u => [u._id.toString(), u]));
 
-    // ประกอบ response ที่พร้อมใช้บน client (id เป็น string เสมอ)
-    const items = cleanConvos.map(c => {
-      const others = (c.participants || [])
-        .map(idOf)
-        .filter(Boolean)
-        .filter(pid => pid !== me);
-      const other = others[0];
+    // map conversations → ตัดออกถ้า peer หาย
+    const items = cleanConvos
+      .map(c => {
+        const other = (c.participants || [])
+          .map(id => id.toString())
+          .find(pid => pid !== me);
 
-      // สร้าง peer แบบ safe (ถ้า user ถูกลบ ให้ fallback ชื่อว่าง/unknown)
-      let peer = null;
-      if (other) {
-        const found = userMap.get(other);
-        peer = {
-          _id: other,
-          name: found?.name || '',
-          username: found?.username || '',
-          email: found?.email || '',
-          avatar: found?.avatar || null,
+        const found = other ? userMap.get(other) : null;
+        if (!found) return null; // 🚨 ตัดออกถ้า peer ถูกลบ
+
+        return {
+          conversationId: c._id.toString(),
+          peer: {
+            _id: other,
+            name: found.name || '',
+            username: found.username || '',
+            email: found.email || '',
+            avatar: found.avatar || null,
+          },
+          lastMessageAt: c.lastMessageAt,
+          lastMessageText: c.lastMessageText || '',
+          unread: Number(c.unread?.get?.(me) ?? 0),
         };
-      }
+      })
+      .filter(Boolean); // กรอง null ออก
 
-      return {
-        conversationId: c._id.toString(),
-        peer, // อาจเป็น null ถ้าห้องไม่มีอีกฝั่งจริง ๆ
-        lastMessageAt: c.lastMessageAt,            // client จัดการ format เอง
-        lastMessageText: c.lastMessageText || '',
-        unread: Number(c.unread?.get?.(me) ?? 0),  // Map ของ mongoose → ใช้ get?
-      };
-    });
-
-    // nextCursor คือ lastMessageAt ของรายการสุดท้ายที่ถูกส่งออก
-    const last = cleanConvos[cleanConvos.length - 1];
-    const nextCursor = (cleanConvos.length === convos.length && convos.length === limit)
-      ? last.lastMessageAt
-      : null;
+    // cursor pagination
+    const last = items[items.length - 1];
+    const nextCursor = (items.length === limit) ? last.lastMessageAt : null;
 
     return res.json({ items, nextCursor });
-    console.log('GET /conversations', { items, nextCursor });
   } catch (e) {
     console.error('GET /conversations error', e);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 router.post('/conversations', authenticateJWT, async (req, res) => {
   const me = req.user._id;

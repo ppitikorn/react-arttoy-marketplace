@@ -380,40 +380,54 @@ router.get('/reports', authenticateJWT, isAdmin, async (req, res) => {
 });
 
 // Update report status (Admin Only)
-router.patch('/reports/:id/status', authenticateJWT, isAdmin, async (req, res) => {
+// PATCH /api/admin/reports/:productId/status
+router.patch('/reports/:productId/status', authenticateJWT, isAdmin, async (req, res) => {
   try {
     const { status } = req.body;
-    
-    // Validate status
-    if (!['Pending', 'Reviewed', 'Resolved', 'Dismissed'].includes(status)) {
+    const { productId } = req.params;
+
+    // validate
+    if (!['Pending', 'Resolved', 'Dismissed'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
-    const report = await Report.findByIdAndUpdate(
-      req.params.id,
-      { 
-        status,
-        reviewedBy: req.user._id,
-        reviewedAt: new Date()
-      },
-      { new: true, runValidators: true }
+    // update ทุก report ที่เกี่ยวข้องกับ productId นี้
+    const result = await Report.updateMany(
+      { product: productId },
+      {
+        $set: {
+          status,
+          reviewedBy: req.user._id,
+          updatedAt: new Date()
+        }
+      }
     );
 
-    if (!report) {
-      return res.status(404).json({ message: 'Report not found' });
-    }
-
-    // If marking as resolved and it's a product report, update the product status
-    if (status === 'Resolved') {
-      await Product.findByIdAndUpdate(report.product, {
+    // ถ้า mark Dismissed → อัพเดท product กลับเป็น Published
+    if (status === 'Dismissed') {
+      await Product.findByIdAndUpdate(productId, {
         $set: { status: 'Published' }
       });
     }
+    if (status === 'Resolved') {
+      await Product.findByIdAndUpdate(productId, {
+        $set: { status: 'Rejected' }
+      });
+    }
 
-    res.json(report);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating report status', error: error.message });
+    res.json({
+      ok: true,
+      modifiedCount: result.modifiedCount,
+      message: `Updated ${result.modifiedCount} reports for product ${productId}`
+    });
+
+    console.log(`✅ Updated ${result.modifiedCount} reports for product ${productId}`);
+  } catch (err) {
+    console.error('Error updating reports:', err);
+    res.status(500).json({ message: 'Error updating reports', error: err.message });
   }
 });
+
+
 
 module.exports = router;

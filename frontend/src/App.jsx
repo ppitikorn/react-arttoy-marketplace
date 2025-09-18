@@ -103,9 +103,9 @@ function App() {
                     <Route path="brands" element={<AdminBrands />} />
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="tags" element={<AdminTags />} />
-                    <Route path="reports" element={<AdminReport />} />
-                    <Route path="reports2" element={<AdminReport2 />} />
-                    <Route path="reports3" element={<AdminReport3 />} />
+                    {/* <Route path="reports" element={<AdminReport />} />
+                    <Route path="reports2" element={<AdminReport2 />} /> */}
+                    <Route path="reports" element={<AdminReport3 />} />
                   </Route>
                 </Routes>
                 </RequireOnboarding>
