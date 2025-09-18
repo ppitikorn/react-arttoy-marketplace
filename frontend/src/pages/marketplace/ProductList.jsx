@@ -302,7 +302,8 @@ export default function ProductList() {
                 <Form.Item label={<span className="font-semibold text-yellow-800">แบรนด์</span>}>
                   <BrandSelect
                     brands={brands}
-                    selectedBrand={filters.brand}
+                    // selectedBrand={filters.brand}
+                    value={filters.brand} 
                     onChange={(v) => handleFilterChange('brand', v)}
                   />
                 </Form.Item>
@@ -357,13 +358,12 @@ export default function ProductList() {
                     <Button onClick={handleResetFilters} danger ghost>
                       ล้างค่า
                     </Button>
-                    <Button
-                      type="primary"
+                    <button
                       onClick={() => setShowFilters(false)}
-                      className="bg-yellow-400 hover:bg-yellow-500 border-none"
+                      className="bg-yellow-400 hover:bg-yellow-500 border-none block md:hidden gap-2 px-3 py-2 rounded-lg text-black transition"
                     >
                       ปิด
-                    </Button>
+                    </button>
                   </Space>
                   {/* แสดงสรุปฟิลเตอร์ที่เลือก (แบบอ่านง่าย) */}
                   {!isPristine && (
@@ -390,15 +390,14 @@ export default function ProductList() {
             <div className="hidden md:block text-sm text-gray-600">
               พบ {filteredProducts.length} รายการ
             </div>
-            <div className="md:hidden">
-              {/* ปุ่มฟิลเตอร์ซ้ำอีกที่ (สำหรับ UX) */}
+            {/* <div className="md:hidden">
               <button
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-300 hover:bg-yellow-400 text-black transition"
                 onClick={() => setShowFilters(true)}
               >
                 <FiFilter /> ปรับฟิลเตอร์
               </button>
-            </div>
+            </div> */}
           </div>
 
           {loading ? (

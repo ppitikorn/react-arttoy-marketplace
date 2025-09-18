@@ -111,19 +111,23 @@ const ProductDetail = () => {
     }
   };
 
+  // Only run when slug changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (slug) {
       fetchProductDetails();
       fetchLikeStatus();
     }
-  }, [slug]);
+  }, [slug ]);
 
+  // Only run when product or user changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-  if (product) {
-    checkUserRole(); 
-    fetchRecomProd();
-  }
-}, [product, user]);
+    if (product) {
+      checkUserRole(); 
+      fetchRecomProd();
+    }
+  }, [product, user]);
 
 const handleLikeToggle = async () => {
   if (!user) {

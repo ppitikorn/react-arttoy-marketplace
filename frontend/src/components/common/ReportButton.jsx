@@ -30,7 +30,7 @@ const ReportButton = ({ productId, productTitle }) => {
         return;
       }
 
-      const response = await api.post(`/api/reports`, { //LASTEST
+      await api.post(`/api/reports`, { //LASTEST
         productId,
         reason: values.reason,
         message: values.message || ''

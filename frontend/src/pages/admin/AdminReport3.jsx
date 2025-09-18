@@ -39,11 +39,6 @@ const AdminReport3 = () => {
       icon: <FaClock className="w-4 h-4" />,
       badge: 'bg-orange-500'
     },
-    'Reviewed': { 
-      color: 'bg-blue-100 text-blue-800 border-blue-200', 
-      icon: <FaEye className="w-4 h-4" />,
-      badge: 'bg-blue-500'
-    },
     'Resolved': { 
       color: 'bg-green-100 text-green-800 border-green-200', 
       icon: <FaCheckCircle className="w-4 h-4" />,
@@ -96,33 +91,57 @@ const AdminReport3 = () => {
       setLoading(false);
     }
   };
-  const handleStatusUpdate = async (reportId, newStatus) => {
-    try {
-      setUpdateLoading(true);
-      await api.patch(`/api/admin/reports/${reportId}/status`, { status: newStatus });
+  const handleStatusUpdate = async (productId, newStatus) => {
+  try {
+    setUpdateLoading(true);
+    await api.patch(`/api/admin/reports/${productId}/status`, { status: newStatus });
+    alert(`Reports for product updated to ${newStatus}`);
 
-      alert(`Report ${newStatus.toLowerCase()} successfully`);
+    // // refresh local state ถ้าจำเป็น
+    // setReports(prev =>
+    //   prev.map(report =>
+    //     report.product === productId
+    //       ? { ...report, status: newStatus }
+    //       : report
+    //   )
+    // );
+    fetchReports(); // Fetch updated reports from server
+    setDetailModalVisible(false);
+  } catch (error) {
+    console.error('Error updating report:', error);
+    alert('Failed to update report status');
+  } finally {
+    setUpdateLoading(false);
+  }
+};
+
+  // const handleStatusUpdate = async (reportId, newStatus) => {
+  //   try {
+  //     setUpdateLoading(true);
+  //     await api.patch(`/api/admin/reports/product/${reportId}/status`, { status: newStatus });
+  //     alert(`Report ${newStatus.toLowerCase()} successfully`);
       
-      // Update local state
-      setReports(prev => prev.map(report => 
-        report._id === reportId 
-          ? { ...report, status: newStatus }
-          : report
-      ));
+  //     // Update local state
+  //     setReports(prev => prev.map(report => 
+  //       report._id === reportId 
+  //         ? { ...report, status: newStatus }
+  //         : report
+  //     ));
 
-      setDetailModalVisible(false);
-    } catch (error) {
-      console.error('Error updating report:', error);
-      alert('Failed to update report status');
-    } finally {
-      setUpdateLoading(false);
-    }
-  };
+  //     setDetailModalVisible(false);
+  //   } catch (error) {
+  //     console.error('Error updating report:', error);
+  //     alert('Failed to update report status');
+  //   } finally {
+  //     setUpdateLoading(false);
+  //   }
+  // };
 
-  const showReportDetail = (report) => {
-    setSelectedReport(report);
-    setDetailModalVisible(true);
-  };
+
+  // const showReportDetail = (report) => {
+  //   setSelectedReport(report);
+  //   setDetailModalVisible(true);
+  // };
   const showReport = (report) => {
     setReportDetail(report);
     setReportModalVisible(true);
@@ -176,7 +195,6 @@ const AdminReport3 = () => {
   const stats = {
     total: reports.length,
     pending: reports.filter(r => r.status === 'Pending').length,
-    reviewed: reports.filter(r => r.status === 'Reviewed').length,
     resolved: reports.filter(r => r.status === 'Resolved').length,
     dismissed: reports.filter(r => r.status === 'Dismissed').length
   };
@@ -230,7 +248,7 @@ const AdminReport3 = () => {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
           <div className="flex items-center">
             <div className="flex-shrink-0">
@@ -251,18 +269,6 @@ const AdminReport3 = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Pending</p>
               <p className="text-2xl font-bold text-orange-600">{stats.pending}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <FaEye className="h-8 w-8 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Reviewed</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.reviewed}</p>
             </div>
           </div>
         </div>
@@ -318,7 +324,6 @@ const AdminReport3 = () => {
             >
               <option value="all">All Status</option>
               <option value="Pending">Pending</option>
-              <option value="Reviewed">Reviewed</option>
               <option value="Resolved">Resolved</option>
               <option value="Dismissed">Dismissed</option>
             </select>
@@ -390,25 +395,21 @@ const AdminReport3 = () => {
         ) : (
           <>
             <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {/* {currentReports.map(report => (
-                <>
-                <ProductCard
-                  key={report._id}
-                  product={report.product}
-                  report={true}
-                />
-                <div className="mt-2 p-2 bg-red-50 border-l-4 border-red-400">
-                <p>🚩 รายงานแล้ว 5 ครั้ง</p>
-                <p className="text-sm text-gray-700">
-                  เหตุผลยอดนิยม: "ไม่เหมาะสม", "รูปไม่ตรงกับสินค้า"
-                </p>
-                <button>ดูรายงานทั้งหมด</button>
-                <button >🗑️ ลบโพสต์</button>
-                <button >✅ ละเว้นรายงาน</button>
-                </div>
-              </>
-              ))} */}
-              {Object.values(groupedReports).map(group => (
+              {Object.values(groupedReports).map(group => {
+                let backgroundColor = '';
+                let borderColor = '';
+                if (group.reports[0].status === 'Resolved'){
+                  backgroundColor = 'bg-green-50';
+                  borderColor = 'border-green-400';
+                }else if (group.reports[0].status === 'Dismissed'){
+                  backgroundColor = 'bg-red-50';
+                  borderColor = 'border-red-400';
+                }else{
+                  backgroundColor = 'bg-yellow-50';
+                  borderColor = 'border-yellow-400';
+                }
+
+                return (
                   <>
                   <ProductCard
                     key={group.product._id}
@@ -416,7 +417,9 @@ const AdminReport3 = () => {
                     reportCount={group.count}
                     reports={group.reports}
                   />
-                  <div className="mt-2 p-2 bg-red-50 border-l-4 border-red-400">
+
+
+                  <div className={`mt-2 p-2 ${backgroundColor} border-l-4 ${borderColor}`}>
                     <p>🚩 รายงานแล้ว {group.count} ครั้ง</p>
                     <p className="text-sm text-gray-700">
                       เหตุผลยอดนิยม: {group.reports.map(r => r.reason).join(', ')}
@@ -425,20 +428,23 @@ const AdminReport3 = () => {
                       className="text-blue-600 hover:underline mr-2"
                       onClick={() => showReport(group.reports)}
                     >
-                      ดูรายงานทั้งหมด
+                      📜 ดูรายงานทั้งหมด
                     </button>
                     <button 
-                    className="text-red-600 hover:underline mr-2"
+                    className="text-green-600 hover:underline mr-2"
+                    onClick={() => handleStatusUpdate(group.product._id, 'Resolved')}
+                    >
+                      ✅ ลบโพสต์ 
+                    </button>
+                    <button 
+                    className="text-red-600 hover:underline"
                     onClick={() => handleStatusUpdate(group.product._id, 'Dismissed')}
                     >
-                      🗑️ ลบโพสต์
-                    </button>
-                    <button className="text-green-600 hover:underline">
-                      ✅ ละเว้นรายงาน
+                       ❌ ละเว้นรายงาน
                     </button>
                   </div>
                 </>
-              ))}
+              )})}
 
             </div>
 
@@ -578,20 +584,9 @@ const AdminReport3 = () => {
                   Close
                 </button>
                 
-                {selectedReport.status === 'Pending' && (
-                  <button
-                    onClick={() => handleStatusUpdate(selectedReport._id, 'Reviewed')}
-                    disabled={updateLoading}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                  >
-                    {updateLoading ? <FaSpinner className="animate-spin h-4 w-4 mr-2" /> : null}
-                    Mark as Reviewed
-                  </button>
-                )}
-                
                 {selectedReport.status !== 'Resolved' && (
                   <button
-                    onClick={() => handleStatusUpdate(selectedReport._id, 'Resolved')}
+                    onClick={() => {handleStatusUpdate(selectedReport.product?._id, 'Resolved'),console.log(selectedReport)}}
                     disabled={updateLoading}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
                   >
@@ -602,7 +597,7 @@ const AdminReport3 = () => {
                 
                 {selectedReport.status !== 'Dismissed' && (
                   <button
-                    onClick={() => handleStatusUpdate(selectedReport._id, 'Dismissed')}
+                    onClick={() => handleStatusUpdate(selectedReport.product?._id, 'Dismissed')}
                     disabled={updateLoading}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
                   >
@@ -694,15 +689,15 @@ const AdminReport3 = () => {
                             {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
                           </div>
                         </td>
-                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
-                            onClick={() => setSelectedReport(report) || setDetailModalVisible(true)}
+                            onClick={() => {setSelectedReport(report); setDetailModalVisible(true); setReportModalVisible(false)}}
                             className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           >
                             <FaEye className="h-3 w-3 mr-1" />
                             View
                           </button>
-                        </td> */}
+                        </td>
                       </tr>
                     ))
                   )}

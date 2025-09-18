@@ -29,7 +29,7 @@ const AdminLayout = () => {
             <FaBox className="text-lg" /> 
             <span>Product Management</span>
           </Link>
-          <Link to="/admin/reports" 
+          {/* <Link to="/admin/reports" 
             className="flex items-center gap-3 px-3 py-3 text-white no-underline rounded-lg hover:bg-slate-700 transition-colors">
             <FaList className="text-lg" /> 
             <span>Reports Management</span>
@@ -38,11 +38,11 @@ const AdminLayout = () => {
             className="flex items-center gap-3 px-3 py-3 text-white no-underline rounded-lg hover:bg-slate-700 transition-colors">
             <FaList className="text-lg" /> 
             <span>Reports Management 2</span>
-          </Link>
-          <Link to="/admin/reports3" 
+          </Link> */}
+          <Link to="/admin/reports" 
             className="flex items-center gap-3 px-3 py-3 text-white no-underline rounded-lg hover:bg-slate-700 transition-colors">
             <FaList className="text-lg" /> 
-            <span>Reports Management 3</span>
+            <span>Reports Management</span>
           </Link>
         </nav>
       </div>

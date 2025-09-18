@@ -36,8 +36,6 @@ const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminBrands = lazy(() => import('./pages/admin/AdminBrands'));
 const AdminProducts = lazy(() => import('./pages/admin/AdminProduct'));
 const AdminTags = lazy(() => import('./pages/admin/AdminTags'));
-const AdminReport = lazy(() => import('./pages/admin/AdminReport'));
-const AdminReport2 = lazy(() => import('./pages/admin/AdminReport2'));
 const AdminReport3 = lazy(() => import('./pages/admin/AdminReport3'));
 
 
@@ -103,9 +101,9 @@ function App() {
                     <Route path="brands" element={<AdminBrands />} />
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="tags" element={<AdminTags />} />
-                    <Route path="reports" element={<AdminReport />} />
-                    <Route path="reports2" element={<AdminReport2 />} />
-                    <Route path="reports3" element={<AdminReport3 />} />
+                    {/* <Route path="reports" element={<AdminReport />} />
+                    <Route path="reports2" element={<AdminReport2 />} /> */}
+                    <Route path="reports" element={<AdminReport3 />} />
                   </Route>
                 </Routes>
                 </RequireOnboarding>

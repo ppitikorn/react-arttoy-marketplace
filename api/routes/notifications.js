@@ -4,20 +4,31 @@ const router = express.Router();
 const Notification = require('../models/Notification');
 const {authenticateJWT} = require('../middleware/auth'); // ตรงกับโปรเจคของนาย
 
+// routes/notifications.js
 router.get('/', authenticateJWT, async (req, res) => {
-  const { page = 1, limit = 20, unread } = req.query;
-  const q = { recipient: req.user._id };
-  if (unread === 'true') q.isRead = false;
+  try {
+    const { page = 1, limit = 20, unread } = req.query;
+    const q = { recipient: req.user._id };
+    if (unread === 'true') q.isRead = false;
 
-  const items = await Notification.find(q)
-    .sort({ updatedAt: -1 })
-    .skip((+page - 1) * +limit)
-    .limit(+limit)
-    .populate('actor', 'username avatar')
-    .lean();
+    // populate actor แบบ lean()
+    const items = await Notification.find(q)
+      .sort({ updatedAt: -1 })
+      .skip((+page - 1) * +limit)
+      .limit(+limit)
+      .populate('actor', 'username avatar') // actor อาจจะ null ถ้าโดนลบ
+      .lean();
 
-  res.json({ items });
+    // กรองแจ้งเตือนที่ actor หายไป
+    const filtered = items.filter(n => n.actor);
+
+    res.json({ items: filtered });
+  } catch (err) {
+    console.error('GET /notifications error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
+
 
 router.get('/count', authenticateJWT, async (req, res) => {
   const count = await Notification.countDocuments({ recipient: req.user._id, isRead: false });

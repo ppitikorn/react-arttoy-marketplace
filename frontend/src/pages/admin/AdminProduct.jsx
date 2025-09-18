@@ -8,7 +8,6 @@ import {
 
 const AdminProduct = () => {
   const [products, setProducts] = useState([]);
-  const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -31,9 +30,8 @@ const AdminProduct = () => {
 
   useEffect(() => {
     fetchProducts();
-    //fetchReports();
-    //console.log("Stats :",stats)
-  }, []);
+  }, []);  // We don't need to add fetchProducts as a dependency since it's defined in the same scope
+          // and doesn't depend on any props or state
 
   const fetchProducts = async () => {
     try {
@@ -44,20 +42,10 @@ const AdminProduct = () => {
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
-      //console.log("Fetched Products:", products);
       setLoading(false);
     }
   };
 
-  const fetchReports = async () => {
-    try {
-      const response = await api.get('/api/admin/reports');
-      setReports(response.data);
-
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-    }
-  };
 
   const calculateStats = (products) => {
     const now = new Date();
@@ -94,7 +82,6 @@ const AdminProduct = () => {
           break;
       }
       fetchProducts();
-      fetchReports();
     } catch (error) {
       console.error('Error performing action:', error);
     }

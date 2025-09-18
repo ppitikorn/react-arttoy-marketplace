@@ -8,7 +8,6 @@ function AdminBrands() {
   //const [editingBrand, setEditingBrand] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const token = localStorage.getItem('token');
 
   useEffect(() => {
     fetchBrands();
@@ -21,6 +20,7 @@ function AdminBrands() {
       setBrands(response.data);
       setIsLoading(false);
     } catch (error) {
+      console.error('Error fetching brands:', error);
       setError('Failed to fetch brands');
       setIsLoading(false);
     }

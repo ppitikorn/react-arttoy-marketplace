@@ -166,7 +166,9 @@ const onPastePlain = (e) => {
               email: d.email || "",
               avatar: d.avatar || null,
             };
-          } catch (_) {}
+          } catch (err) {
+            console.error("fetch peer info failed", err);
+          }
 
           const placeholder = {
             conversationId: cid,

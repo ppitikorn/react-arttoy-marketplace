@@ -30,7 +30,7 @@ function SelectCard({ selected, onClick, title, image }) {
 }
   
 export default function Onboarding() {
-  const { user, setUser , refreshUser} = useAuth();
+  const {  setUser , refreshUser} = useAuth();
   const navigate = useNavigate();
 
   // ---------- Step state ----------
