@@ -221,7 +221,7 @@ const AdminReport = () => {
       key: 'status',
       width: 120,
       render: (status) => {
-        const config = statusConfig[status];
+        //const config = statusConfig[status];
         return (
           <Badge 
             status={status === 'Pending' ? 'processing' : status === 'Resolved' ? 'success' : status === 'Dismissed' ? 'error' : 'default'}

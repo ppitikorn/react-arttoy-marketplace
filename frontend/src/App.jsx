@@ -36,8 +36,6 @@ const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminBrands = lazy(() => import('./pages/admin/AdminBrands'));
 const AdminProducts = lazy(() => import('./pages/admin/AdminProduct'));
 const AdminTags = lazy(() => import('./pages/admin/AdminTags'));
-const AdminReport = lazy(() => import('./pages/admin/AdminReport'));
-const AdminReport2 = lazy(() => import('./pages/admin/AdminReport2'));
 const AdminReport3 = lazy(() => import('./pages/admin/AdminReport3'));
 
 

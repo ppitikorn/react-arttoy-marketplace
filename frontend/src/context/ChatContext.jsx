@@ -31,7 +31,9 @@ export function ChatProvider({ children }) {
       try {
         socketRef.current.removeAllListeners();
         socketRef.current.disconnect();
-      } catch {}
+      } catch (e){
+        console.error("Error disconnecting socket:", e);
+      }
       socketRef.current = null;
       setSocket(null);
     }
@@ -74,7 +76,9 @@ export function ChatProvider({ children }) {
       try {
         s.removeAllListeners();
         s.disconnect();
-      } catch {}
+      } catch (error) {
+        console.error("Error disconnecting socket:", error);
+      }
     };
   }, [token]);
 

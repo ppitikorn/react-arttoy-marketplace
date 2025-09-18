@@ -50,6 +50,8 @@ const Seller = () => {
     return publishedProducts;
   }, [activeTab, publishedProducts, pendingProducts, rejectedProducts]);
 
+  // Only run once when username changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (username) {
       fetchSellerProfile();

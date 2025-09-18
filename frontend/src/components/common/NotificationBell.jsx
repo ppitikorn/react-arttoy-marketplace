@@ -39,10 +39,7 @@ export default function NotificationBell() {
     (async () => {
       try {
         setLoading(true);
-        const [{ data: list }, { data: c }] = await Promise.all([
-          api.get("/api/notifications?limit=20"),
-          api.get("/api/notifications/count"),
-        ]);
+        const { data: list } = await api.get("/api/notifications?limit=20");
         if (!mounted) return;
         // setItems(Array.isArray(list.items) ? list.items : []);
         // const uniq = [];

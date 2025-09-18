@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Input, Modal, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 
 function AdminTags() {
@@ -11,8 +10,6 @@ function AdminTags() {
     const [editingTag, setEditingTag] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [error, setError] = useState('');
-    const { user } = useAuth();
-    const token = localStorage.getItem('token');
     
     useEffect(() => {
         fetchTags();
@@ -24,7 +21,9 @@ function AdminTags() {
         //console.log(response.data);
         setTags(response.data);
         } catch (error) {
-        setError('Failed to fetch tags');
+          const errorMsg = 'Failed to fetch tags';
+          setError(errorMsg);
+          message.error(errorMsg);
         }
     };
     

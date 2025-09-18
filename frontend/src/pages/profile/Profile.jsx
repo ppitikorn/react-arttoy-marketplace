@@ -137,14 +137,13 @@ const Profile = () => {
     };
 
     fetchProfile();
-  }, []);
+  }, [formik]);
   const handleVerifyEmail = async () => {
     try {
       setOtpLoading(true);
       setOtpError('');
 
-      const response = await api.post('/api/profile/verify-email');
-      //console.log('Verification email sent:', response.data.message);
+      await api.post('/api/profile/verify-email');
       setShowOTPModal(true);
       
       // Update verification status
@@ -164,7 +163,7 @@ const Profile = () => {
       setOtpLoading(true);
       setOtpError('');
 
-      const response = await api.post('/api/profile/verify-email-otp', 
+      await api.post('/api/profile/verify-email-otp', 
         { otp }
       );
       

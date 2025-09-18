@@ -66,14 +66,16 @@ export default function ProductEdit() {
   ];
 
   // Check if user is seller and can edit this product
+  // Only run once on mount and when slug/user changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    fetchProductData();
-    fetchBrandsAndTags();
     if (!user) {
       message.error('Please login to access this page');
       navigate('/login');
       return;
     }
+    fetchProductData();
+    fetchBrandsAndTags();
     // if (user.id !== productData?.seller.id) {
     //   console.error('Unauthorized access attempt by user:', user.id);
     //   console.error('Product data:', productData);
