@@ -132,9 +132,12 @@ export default function PostProduct() {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
       //console.log('Product created:', response.data);
-      message.success('Product created successfully');
+      if(response.data.moderation.final === 'approved'){
+        message.success(response.data.message);
+      } else if (response.data.moderation.final === 'pending') {
+        message.warning(response.data.message);
+      }
       navigate('/products'); // Redirect to product list or detail page
       form.resetFields();
       setImages([]);

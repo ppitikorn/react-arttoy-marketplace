@@ -98,9 +98,15 @@ router.post('/', authenticateJWT, uploadProduct.array('images', 5), async (req, 
       // ลบรูปทั้งหมดที่อัปโหลด (rollback media)
       try { await deleteCloudinaryImages(imageUrls); } catch (e) { console.warn('Cloudinary cleanup error:', e); }
       return res.status(400).json({
-        message: 'รูปภาพไม่ผ่านเกณฑ์การตรวจสอบ',
+        message: 'Product rejected due to policy violation',
         moderation: { final, results },
       });
+    }
+    let message;
+    if (final === 'approved') {
+      message = 'Product published successfully';
+    } else if (final === 'pending') {
+      message = 'Product submitted, waiting for admin approval';
     }
 
     const status = final === 'approved' ? 'Published' : 'Pending';
@@ -121,7 +127,7 @@ router.post('/', authenticateJWT, uploadProduct.array('images', 5), async (req, 
     });
 
     return res.status(201).json({
-      message: 'Product created successfully',
+      message: message,
       product: newProduct,
       moderation: { final, results }, // ส่งผลตรวจกลับให้ UI ถ้าจะโชว์
     });

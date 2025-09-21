@@ -1,55 +1,3 @@
-// const vision = require('@google-cloud/vision');
-// // Google Vision API configuration
-
-// const client = new vision.ImageAnnotatorClient({
-//     keyFilename: process.env.GOOGLE_VISION_KEYFILE || 'p-project-457518-4a56e63357e5.json',
-// });
-
-// const FriendlyLabels = 
-//         ['toy','cartoon','fun','colorful','cute','playful','action figure','figurine','stuffed toy', 'plush', 'mascot', 
-//         'fictional character','baby toys','plastic','robot','animation','animated cartoon','collectable','doll'];        
-
-// async function detectLabels(imagePath) {
-//     try {
-//         const [labelResult] = await client.labelDetection(imagePath);
-//         const labels = labelResult.labelAnnotations.map(label => label.description.toLocaleLowerCase());
-
-//         const [propertiesResult] = await client.imageProperties(imagePath);
-//         const dominantColors = propertiesResult.imagePropertiesAnnotation.dominantColors.colors;
-//         const hasFriendlyLabel = labels.some(label => FriendlyLabels.includes(label));
-//         //const isColorful = dominantColors.some(color => {color.score > 0.3 && color.pixelFraction > 0.1 && color.color});
-//         const isColorful = dominantColors.some(c =>
-//             (c.score > 0.3) && (c.pixelFraction > 0.1) && !!c.color
-//             );
-
-//         console.log(`Detected labels of imagePath :`, labels);
-//         console.log(`Has friendly label of imagePath $:`, hasFriendlyLabel);
-//         console.log(`Is colorful of imagePath :`, isColorful);
-
-//         if (hasFriendlyLabel || isColorful) {
-//             console.log('Image is friendly or colorful');
-//             return true;
-//         } else {
-//             console.log('Image is not friendly or colorful');
-//             return false;
-//         }
-//     } catch (error) {
-//         console.error('Error detecting labels:', error);
-//         throw new Error('Failed to detect labels');
-//     }
-// }
-
-// (async ()=>{
-//     try {
-//         const testImagePath = 'https://res.cloudinary.com/dmzmufy56/image/upload/v1749483741/arttoy/product/srdusvht7v3chs7nyyap.jpg'; 
-//         const isFriendly = await detectLabels(testImagePath);
-//         console.log(`Is the image friendly? ${isFriendly}`);
-//     } catch (error) {
-//         console.error('Error in label detection:', error);
-//     }
-// })();
-
-// module.exports = { client, detectLabels };
 /**
  * Google Vision integration (bugfixed + production-ready)
  * - ยืดหยุ่นเรื่อง credential: รองรับ GCV_JSON_BASE64, GCV_SERVICE_ACCOUNT_JSON,
@@ -132,8 +80,10 @@ const DEFAULTS = {
 };
 
 // ---------- Helpers ----------
+// แปลง lowercase
 function normalize(str = '') { return String(str || '').toLowerCase(); }
 
+// ตรวจว่ามี label ที่น่าเชื่อถือ + friendly ไหม
 function hasFriendlyLabel(labels, { friendlyKeywords, thresholds }) {
   return (labels || []).some(l => {
     const d = normalize(l.description);
@@ -142,23 +92,23 @@ function hasFriendlyLabel(labels, { friendlyKeywords, thresholds }) {
     return friendlyKeywords.some(k => d.includes(k));
   });
 }
-
+// ตรวจว่ามีสีสันโดดเด่นพอไหม
 function isColorfulEnough(colors = [], { thresholds }) {
   // bugfix: ต้อง return ใน some() เสมอ
   return colors.some(c => (c.score > thresholds.colorful.score) &&
                           (c.pixelFraction > thresholds.colorful.pixelFraction));
 }
-
+// ตรวจว่ามีคำต้องห้ามใน OCR ไหม
 function containsBannedText(text = '', { bannedText }) {
   const t = normalize(text);
   return bannedText.some(b => t.includes(normalize(b)));
 }
-
+// ตรวจว่ามีวัตถุที่เป็นมิตรไหม
 function objectFriendly(objects = [], { friendlyObjects }) {
   const names = (objects || []).map(o => normalize(o.name));
   return names.some(n => friendlyObjects.some(k => n.includes(k)));
 }
-
+// สร้าง feature set สำหรับส่งให้ Vision
 function buildFeatureSet(maxResults) {
   return [
     { type: 'SAFE_SEARCH_DETECTION' },
@@ -170,6 +120,9 @@ function buildFeatureSet(maxResults) {
   ];
 }
 
+
+// ประเมินผลลัพธ์จาก Vision
+// รวม multi-signal เพื่อเป็น verdict เดียว
 // ใช้ตัดสินจาก response ของ Vision (single image)
 function evaluateVisionResponse(imageUri, res, cfg = DEFAULTS) {
   const safe  = res.safeSearchAnnotation || {};
@@ -236,11 +189,23 @@ function evaluateVisionResponse(imageUri, res, cfg = DEFAULTS) {
 async function moderateImage(imageUri, options = {}) {
   const cfg = { ...DEFAULTS, ...options, thresholds: { ...DEFAULTS.thresholds, ...(options.thresholds || {}) } };
   try {
+    //ส่งให้ Vision วิเคราะห์
     const [res] = await client.annotateImage({
       image: { source: { imageUri } },
       features: buildFeatureSet(cfg.maxLabelResults),
     });
     return evaluateVisionResponse(imageUri, res, cfg);
+    // ตัวอย่างผลลัพธ์:
+    // {
+    //   imageUri: 'https://...',
+    //   verdict: 'approved',
+    //   reasons: [ 'low_confidence' ],
+    //   safeSearch: { adult: 'VERY_UNLIKELY', ... },
+    //   labels: [ { description: 'toy', score: 0.98 }, ... ],
+    //   objects: [ 'doll', 'figurine' ],
+    //   ocrSample: '...',
+    //   colors: [ { color: { red, green, blue }, score, pixelFraction }, ... ]
+    // }
   } catch (err) {
     console.error('[Vision] moderateImage error:', err?.message || err);
     if (cfg.failBehavior === 'throw') throw err;
@@ -287,7 +252,18 @@ async function moderatePost(imageUris = [], options = {}) {
     let final = 'pending';
     if (anyRejected) final = 'rejected';
     else if (anyApproved) final = 'approved';
-    console.log("📦 moderatePost result:", { final, results });
+    // console.log("📦 moderatePost result:", { final, results });
+    console.log("📦 moderatePost result:", JSON.stringify({ 
+      final, 
+      results: results.map(result => ({
+        ...result,
+        reasons: result.reasons,  // This will show full array
+        safeSearch: { ...result.safeSearch },  // This will show full object
+        labels: result.labels,
+        objects: result.objects,
+        colors: result.colors
+      }))
+    }, null, 2));
     return { final, results };
   } catch (err) {
     console.error('[Vision] moderatePost error:', err?.message || err);
@@ -326,7 +302,6 @@ module.exports = {
   moderateImage,
   moderatePost,
   getVisionProjectId,
-  // เผื่ออยากใช้กติกานี้ที่อื่น
   evaluateVisionResponse,
   DEFAULTS,
 };
