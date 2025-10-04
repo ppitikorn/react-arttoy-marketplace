@@ -1,9 +1,10 @@
 // src/pages/Home.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState ,useMemo} from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
 import axios from 'axios';
 import ProductCard from '../components/common/ProductCard';
+import {  Form, Input } from 'antd';
 
 const categories = [
   { label: 'Figure', value: 'Figure', img: 'https://image.makewebcdn.com/makeweb/m_1920x0/yWSGoz9KF/04_POPMART/20240807_141258_889661____5_____1200x1200.jpg' },
@@ -16,7 +17,9 @@ const categories = [
 export default function Home() {
   const navigate = useNavigate();
   const [rand, setRand] = useState([]);
+  //const [topitems, setTopitems] = useState([]);
   const [loading, setLoading] = useState(true);
+  //const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -25,6 +28,7 @@ export default function Home() {
         setLoading(true);
         const res = await api.get('/api/products/randoms/item', { signal: ctrl.signal });
         const items = Array.isArray(res.data?.items) ? res.data.items : [];
+        //console.log('Random items:', items);
         setRand(items);
       } catch (e) {
       // ✅ เงื่อนไขมอง cancel เป็นเคสปกติ
@@ -39,6 +43,27 @@ export default function Home() {
   })();
     return () => ctrl.abort();
   }, []);
+  //   const filteredProducts = useMemo(() => {
+  //   if (!searchQuery) return topitems;
+  //   const q = searchQuery.toLowerCase();
+  //   return topitems.filter((p) => {
+  //      const title = (p.title || p.name || '').toLowerCase();
+  //      return title.includes(q);
+  //    });
+  //  }, [topitems, searchQuery]);
+
+  // useEffect(() => {
+  //   (async () => {
+  //   try {
+  //     let params;
+  //     const res = await api.get(`/api/products/published?${params}`);
+  //     setTopitems(res.data.items);
+  //     console.log(res.data.items);
+  //   }catch (e) {
+  //     console.error(e);
+  //   }
+  // })();
+  // }, []);
 
   return (
     <div className="min-h-screen bg-yellow-50 text-gray-900">
@@ -78,6 +103,16 @@ export default function Home() {
 
       {/* CATEGORIES */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+        {/* <Form layout="vertical" className="space-y-3">
+        <Form.Item label={<span className="font-semibold text-yellow-800">ค้นหา</span>}>
+                  <Input
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    allowClear
+                    className="rounded-lg border-yellow-200 focus:border-yellow-400 focus:ring-2 focus:ring-yellow-300"
+                  />
+                </Form.Item></Form> */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl sm:text-2xl font-bold ">สำรวจตามหมวดหมู่</h2>
           <Link to="/products" className="text-amber-600 hover:underline text-sm">ดูทั้งหมด</Link>
@@ -131,6 +166,22 @@ export default function Home() {
           </div>
         )}
       </section>
+      {/* <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold">สินค้าเรียงจากยอดวิวสินค้า</h2>
+          <Link to="/products" className="text-amber-600 hover:underline text-sm">ดูสินค้าเพิ่มเติม</Link>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">กำลังโหลด...</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredProducts.map((p) => (
+              <ProductCard key={p._id} product={p} />
+            ))}
+          </div>
+        )}
+      </section> */}
     </div>
   );
 }

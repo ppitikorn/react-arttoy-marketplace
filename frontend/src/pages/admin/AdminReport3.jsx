@@ -241,7 +241,7 @@ const AdminReport3 = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Report Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Post Management</h1>
         <p className="text-gray-600">
           Manage and review user reports for products and content moderation
         </p>
@@ -434,13 +434,13 @@ const AdminReport3 = () => {
                     className="text-green-600 hover:underline mr-2"
                     onClick={() => handleStatusUpdate(group.product._id, 'Resolved')}
                     >
-                      ✅ ลบโพสต์ 
+                      ✅ ลบโพสต์ที่ถูกรายงาน
                     </button>
                     <button 
                     className="text-red-600 hover:underline"
                     onClick={() => handleStatusUpdate(group.product._id, 'Dismissed')}
                     >
-                       ❌ ละเว้นรายงาน
+                       ❌ ละเว้นโพสต์ที่ถูกรายงาน
                     </button>
                   </div>
                 </>

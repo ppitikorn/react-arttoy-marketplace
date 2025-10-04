@@ -221,6 +221,7 @@ const AdminProduct = () => {
   return (
     <div className="p-6 text-gray-800">
       {/* Dashboard Stats */}
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Product Management</h1>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 ">
         <div className="bg-white p-4 rounded-lg shadow">
           <div className="flex items-center justify-between">

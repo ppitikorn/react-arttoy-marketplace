@@ -42,7 +42,7 @@ const AdminLayout = () => {
           <Link to="/admin/reports" 
             className="flex items-center gap-3 px-3 py-3 text-white no-underline rounded-lg hover:bg-slate-700 transition-colors">
             <FaList className="text-lg" /> 
-            <span>Reports Management</span>
+            <span>Post Management</span>
           </Link>
         </nav>
       </div>

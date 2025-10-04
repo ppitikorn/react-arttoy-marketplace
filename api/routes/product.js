@@ -205,6 +205,7 @@ router.get('/published', async (req, res) => {
       tags,           // ← ชื่อแท็กคั่นด้วย comma หรือจะเป็น _id ก็ได้
       rarity,
       seller,         // username
+      views,         // ยอดวิวขั้นต่ำ (number)
       minPrice,
       maxPrice,
       q,
@@ -224,6 +225,7 @@ router.get('/published', async (req, res) => {
     if (condition) filter.condition = condition;
     //if (brand)     filter.brand     = brand;
     if (rarity)    filter.rarity    = rarity;
+    if (views)  filter.views  = { $gte: Number(views) };
 
     // ราคา (number)
     const minP = minPrice != null ? Number(minPrice) : null;
@@ -350,6 +352,7 @@ if (seller) {
           slug: 1,
           price: 1,
           images: { $slice: ['$images', 1] },
+          views: 1,
           category: 1,
           brand: 1,
           tags: 1,
@@ -377,13 +380,15 @@ if (seller) {
       { $limit: lim + 1 }, // +1 เพื่อเช็คว่ามีหน้าถัดไปไหม
     ];
 
-    const docs = await Product.aggregate(pipeline).allowDiskUse(true);
+    const docs = await Product.aggregate(pipeline).allowDiskUse(true).sort({ views: -1 });
     const hasNext = docs.length > lim;
     const items = hasNext ? docs.slice(0, lim) : docs;
 
     const last = items[items.length - 1];
     const nextCursor = hasNext && last ? last.createdAt : null;
     const nextLastId = hasNext && last ? last._id : null;
+    // เรียงจาก view สูงสุดไปต่ำสุด
+    //const items = await Product.find({ status: 'Published' }).sort({ views: -1 }).limit(lim);
 
     // ส่ง lastId กลับไปด้วย (ถ้าจะใช้ tie-breaker ที่ฝั่ง client)
     res.json({ items, nextCursor, nextLastId });
@@ -393,6 +398,7 @@ if (seller) {
   }
 });
 
+//
 
 // Get a single product by slug
 router.get('/:slug', async (req, res) => {

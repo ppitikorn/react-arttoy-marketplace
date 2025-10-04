@@ -60,6 +60,7 @@ export default function ProductList() {
     rarity: '',
     condition: '',
     tags: [],
+    //views: null,
     minPrice: null,
     maxPrice: null,
   });
@@ -96,6 +97,7 @@ export default function ProductList() {
     rarity: '',
     condition: '',
     tags: [],
+    //views: null,
     minPrice: null,
     maxPrice: null,
   };
@@ -124,6 +126,7 @@ export default function ProductList() {
     if (next.q !== undefined) setSearchQuery(next.q);
     // รีเซ็ตหน้าให้เริ่มที่หน้า 1
     setCurrentPage(1);
+    //console.log('Parsed filters from URL:', next);
   }, [searchParams]);
   // ✅ ยิงค้นหา “เมื่อค่าที่ debounce แล้วเปลี่ยน” + ยกเลิกคำขอเก่า
   useEffect(() => {
@@ -139,6 +142,7 @@ export default function ProductList() {
             rarity: debouncedFilters.rarity,
             condition: debouncedFilters.condition,
             tags: debouncedFilters.tags?.length ? debouncedFilters.tags.join(',') : undefined,
+            //views: debouncedFilters.views !== null ? String(debouncedFilters.views) : undefined,
             minPrice:
               debouncedFilters.minPrice !== null ? String(debouncedFilters.minPrice) : undefined,
             maxPrice:
@@ -203,6 +207,7 @@ export default function ProductList() {
     !filters.brand &&
     !filters.rarity &&
     !filters.condition &&
+    //!filters.views &&
     (!filters.tags || filters.tags.length === 0) &&
     filters.minPrice == null &&
     filters.maxPrice == null;
@@ -323,6 +328,18 @@ export default function ProductList() {
                     ))}
                   </Select>
                 </Form.Item>
+                {/* <Form.Item label={<span className="font-semibold text-yellow-800">Views</span>}>
+                  <div className="flex gap-2">
+                    <InputNumber
+                      className="flex-1"
+                      placeholder="ต่ำสุด"
+                      value={filters.views}
+                      onChange={(v) => handleFilterChange('views', v ?? null)}
+
+                      parser={(v) => (v ? v.replace(/฿\s?|(,*)/g, '') : '')}
+                    />
+                  </div>
+                </Form.Item> */}
 
                 <Form.Item label={<span className="font-semibold text-yellow-800">ราคา</span>}>
                   <div className="flex gap-2">

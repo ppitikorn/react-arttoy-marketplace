@@ -82,7 +82,7 @@ function AdminTags() {
     ];  
     return (
         <div>
-            <h2>Admin Tags Management</h2>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Tag Management</h1>
             <Button
                 type="primary"
                 icon={<PlusOutlined />}

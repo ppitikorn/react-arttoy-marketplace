@@ -149,6 +149,7 @@ function ProductCard({ product , isSold = false}) {
             <div className="mt-auto pt-3">
               <div className="flex justify-between items-center mb-2">
                   <span className="text-[#FF4C4C] font-bold">฿{product.price.toLocaleString()}</span>
+                  {/* <span >Views : {product?.views}</span> */}
                   <span className="text-sm text-gray-500">{product.condition}</span>
               </div>
               <div className="flex justify-between items-center">
