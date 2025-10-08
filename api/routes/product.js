@@ -511,7 +511,28 @@ router.put('/:slug', authenticateJWT, uploadProduct.array('newImages', 5), async
     });
   }
 });
+// Delete a product by slug
+router.delete('/:slug', authenticateJWT, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user._id;
+    const product = await Product.findOne({ slug });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
 
+    // Check if user is the seller
+    if (!product.seller.equals(userId)) {
+      return res.status(403).json({ message: 'Unauthorized access' });
+    }
+
+    await Product.deleteOne({ _id: product._id });
+    return res.status(200).json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    return res.status(500).json({ message: 'Failed to delete product', error: error.message });
+  }
+});
 
 // Patch product mark as sold
 router.patch('/:slug/sold', authenticateJWT, async (req, res) => {
